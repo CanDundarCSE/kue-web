@@ -49,7 +49,7 @@ export default function ThemePreviewPage() {
         <ThemeToggleButton />
       </header>
 
-      <main className="mx-auto flex max-w-3xl flex-col gap-8 p-4 sm:p-6">
+      <main className="mx-auto flex max-w-5xl flex-col gap-8 p-4 sm:p-6">
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold">Media library rows</h2>
           <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">

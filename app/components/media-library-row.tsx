@@ -15,21 +15,21 @@ function ProgressMeter({
   const percent = total > 0 ? Math.min(100, Math.max(0, Math.round((current / total) * 100))) : 0;
 
   return (
-    <div className="w-full min-w-0">
+    <div className="flex w-full min-w-0 items-center gap-3">
       <div
         role="progressbar"
         aria-valuenow={percent}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-label={`${current} of ${total} ${unit}`}
-        className="h-1 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-white/12"
+        className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-[#1e40af]/12 dark:bg-[#6b7bf5]/20"
       >
         <div
-          className="h-full rounded-full bg-zinc-900 dark:bg-zinc-100"
+          className="h-full rounded-full bg-[#1e40af] dark:bg-[#6b7bf5]"
           style={{ width: `${percent}%` }}
         />
       </div>
-      <p className="mt-1.5 truncate text-[11px] leading-none text-zinc-500 dark:text-zinc-400">
+      <p className="shrink-0 text-[11px] leading-none whitespace-nowrap text-zinc-500 dark:text-zinc-400">
         <span className="text-zinc-700 dark:text-zinc-200">
           {current}/{total}
         </span>{" "}
@@ -87,12 +87,12 @@ export default function MediaLibraryRow({
           </div>
         </div>
 
-        <div className="hidden shrink-0 lg:block">
+        <div className="hidden w-28 shrink-0 lg:block">
           <StatusBadge status={status} />
         </div>
 
         {progress && (
-          <div className="hidden w-36 shrink-0 lg:block xl:w-44">
+          <div className="hidden w-44 shrink-0 lg:block xl:w-52">
             <ProgressMeter {...progress} />
           </div>
         )}

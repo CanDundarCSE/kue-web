@@ -1,3 +1,4 @@
+import Button from "@/app/components/button";
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
 import ThemeToggleButton from "@/app/components/theme-toggle-button";
 
@@ -32,6 +33,37 @@ export default function ThemePreviewPage() {
       </header>
 
       <main className="mx-auto flex max-w-3xl flex-col gap-8 p-4 sm:p-6">
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold">Buttons</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col items-start gap-3 rounded-xl bg-white p-6">
+              <p className="text-xs font-medium text-zinc-500">Light</p>
+              <Button>Start your index — free</Button>
+              <Button variant="secondary">See how it works</Button>
+            </div>
+            <div className="dark flex flex-col items-start gap-3 rounded-xl bg-zinc-950 p-6">
+              <p className="text-xs font-medium text-zinc-400">Dark</p>
+              <Button>Start your index — free</Button>
+              <Button variant="secondary">See how it works</Button>
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 rounded-xl bg-white p-6 dark:bg-zinc-900">
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              Sizes and states
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button size="sm">Small</Button>
+              <Button size="lg">Large</Button>
+              <Button variant="secondary" size="lg">
+                Secondary
+              </Button>
+              <Button disabled>Disabled</Button>
+              <Button className="rounded-full">Rounded</Button>
+            </div>
+            <Button fullWidth>Full width</Button>
+          </div>
+        </section>
+
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold">Media avatar cards</h2>
           <div className="flex flex-wrap items-end gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">

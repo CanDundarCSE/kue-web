@@ -1,6 +1,23 @@
 import Button from "@/app/components/button";
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
+import MediaLibraryRow from "@/app/components/media-library-row";
+import type { MediaStatus } from "@/app/components/status-badge";
 import ThemeToggleButton from "@/app/components/theme-toggle-button";
+
+const SAMPLE_LIBRARY: {
+  title: string;
+  year: number;
+  studio: string;
+  type: MediaType;
+  status: MediaStatus;
+  progress: { current: number; total: number; unit: string };
+  rating: number;
+}[] = [
+  { title: "Frieren: Beyond Journey's End", year: 2023, studio: "Madhouse", type: "anime", status: "watching", progress: { current: 16, total: 28, unit: "ep" }, rating: 9.6 },
+  { title: "Elden Ring", year: 2022, studio: "FromSoftware", type: "game", status: "playing", progress: { current: 84, total: 150, unit: "h" }, rating: 8.4 },
+  { title: "Berserk", year: 1989, studio: "Kentaro Miura", type: "manga", status: "reading", progress: { current: 246, total: 374, unit: "ch" }, rating: 9.8 },
+  { title: "Severance", year: 2022, studio: "Dan Erickson", type: "series", status: "watching", progress: { current: 9, total: 19, unit: "ep" }, rating: 8.2 },
+];
 
 const SAMPLE_MEDIA: { title: string; year: number; type: MediaType }[] = [
   { title: "Frieren: Beyond Journey's End", year: 2023, type: "anime" },
@@ -33,6 +50,25 @@ export default function ThemePreviewPage() {
       </header>
 
       <main className="mx-auto flex max-w-3xl flex-col gap-8 p-4 sm:p-6">
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold">Media library rows</h2>
+          <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+            {SAMPLE_LIBRARY.map((item) => (
+              <MediaLibraryRow
+                key={item.title}
+                className="odd:bg-zinc-50 dark:odd:bg-zinc-900/60"
+                {...item}
+              />
+            ))}
+          </div>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Progress and rating drop out below <code>lg</code> and <code>sm</code>{""}
+            respectively, and both collapse onto a second line under the title on
+            narrow screens. Zebra striping comes from the parent&apos;s{" "}
+            <code>odd:</code> variant, not the row.
+          </p>
+        </section>
+
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold">Buttons</h2>
           <div className="grid gap-4 sm:grid-cols-2">

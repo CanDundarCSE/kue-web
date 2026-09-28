@@ -16,7 +16,14 @@ const CARD_SIZE: Record<MediaAvatarCardSize, string> = {
 };
 
 function getInitials(title: string) {
-  return title.replace(/[^\p{L}\p{N}]/gu, "").slice(0, 2).toUpperCase() || "?";
+  const words = title.split(/\s+/).filter(Boolean);
+  return (
+    words
+      .slice(0, 2)
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase() || "?"
+  );
 }
 
 export default function MediaAvatarCard({

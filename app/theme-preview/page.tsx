@@ -4,6 +4,19 @@ import MediaLibraryRow from "@/app/components/media-library-row";
 import type { MediaStatus } from "@/app/components/status-badge";
 import ThemeToggleButton from "@/app/components/theme-toggle-button";
 
+const COVERS: Record<string, string> = {
+  "Frieren: Beyond Journey's End":
+    "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx154587-qQTzQnEJJ3oB.jpg",
+  "Elden Ring": "https://images.igdb.com/igdb/image/upload/t_cover_big/co4jni.jpg",
+  "Elden Ring Nightreign":
+    "https://images.igdb.com/igdb/image/upload/t_cover_big/co95gk.jpg",
+  "ELDEN RING: Become Lord":
+    "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/b175308-rhpJgFoEwq38.jpg",
+  Severance: "https://image.tmdb.org/t/p/w500/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg",
+  Berserk: "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/bx30002-Cul4OeN7bYtn.jpg",
+  Parasite: "https://image.tmdb.org/t/p/w500/nx7TmJDMkgyBc09DVo5ze52Wt3F.jpg",
+};
+
 const SAMPLE_LIBRARY: {
   title: string;
   year: number;
@@ -12,20 +25,21 @@ const SAMPLE_LIBRARY: {
   status: MediaStatus;
   progress: { current: number; total: number; unit: string };
   rating: number;
+  image?: string;
 }[] = [
-  { title: "Frieren: Beyond Journey's End", year: 2023, studio: "Madhouse", type: "anime", status: "watching", progress: { current: 16, total: 28, unit: "ep" }, rating: 9.6 },
-  { title: "Elden Ring", year: 2022, studio: "FromSoftware", type: "game", status: "playing", progress: { current: 84, total: 150, unit: "h" }, rating: 8.4 },
-  { title: "Berserk", year: 1989, studio: "Kentaro Miura", type: "manga", status: "reading", progress: { current: 246, total: 374, unit: "ch" }, rating: 9.8 },
-  { title: "Severance", year: 2022, studio: "Dan Erickson", type: "series", status: "watching", progress: { current: 9, total: 19, unit: "ep" }, rating: 8.2 },
+  { title: "Frieren: Beyond Journey's End", year: 2023, studio: "Madhouse", type: "anime", status: "watching", progress: { current: 16, total: 28, unit: "ep" }, rating: 9.6, image: COVERS["Frieren: Beyond Journey's End"] },
+  { title: "Elden Ring", year: 2022, studio: "FromSoftware", type: "game", status: "playing", progress: { current: 84, total: 150, unit: "h" }, rating: 8.4, image: COVERS["Elden Ring"] },
+  { title: "Berserk", year: 1989, studio: "Kentaro Miura", type: "manga", status: "reading", progress: { current: 246, total: 374, unit: "ch" }, rating: 9.8, image: COVERS.Berserk },
+  { title: "Severance", year: 2022, studio: "Dan Erickson", type: "series", status: "watching", progress: { current: 9, total: 19, unit: "ep" }, rating: 8.2, image: COVERS.Severance },
 ];
 
-const SAMPLE_MEDIA: { title: string; year: number; type: MediaType }[] = [
-  { title: "Frieren: Beyond Journey's End", year: 2023, type: "anime" },
-  { title: "Elden Ring", year: 2022, type: "game" },
-  { title: "Severance", year: 2022, type: "series" },
-  { title: "Berserk", year: 1989, type: "manga" },
-  { title: "Parasite", year: 2019, type: "movie" },
-  { title: "Vagabond", year: 1989, type: "manga" },
+const SAMPLE_MEDIA: { title: string; year?: number; type: MediaType; image?: string }[] = [
+  { title: "Elden Ring", year: 2022, type: "game", image: COVERS["Elden Ring"] },
+  { title: "Elden Ring Nightreign", year: 2025, type: "game", image: COVERS["Elden Ring Nightreign"] },
+  { title: "ELDEN RING: Become Lord", year: 2024, type: "manga", image: COVERS["ELDEN RING: Become Lord"] },
+  { title: "Severance", year: 2022, type: "series", image: COVERS.Severance },
+  { title: "Parasite", year: 2019, type: "movie", image: COVERS.Parasite },
+  { title: "No artwork in the response", type: "movie" },
 ];
 
 const LEGEND: { type: MediaType; label: string; swatch: string }[] = [
@@ -108,6 +122,7 @@ export default function ThemePreviewPage() {
                 key={item.title}
                 title={item.title}
                 year={item.year}
+                image={item.image}
                 type={item.type}
               />
             ))}
@@ -126,6 +141,21 @@ export default function ThemePreviewPage() {
             <code>className</code> will not override them, because Tailwind emits
             arbitrary values after named ones.
           </p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            <code>image</code> fills the card with <code>object-cover</code> and
+            leaves the accent stripe exposed on the left. The URLs are the{" "}
+            <code>coverImage</code> values from a real{" "}
+            <code>/api/v1/media/search?q=elden ring</code> response, so pass that
+            field straight through as <code>image</code>. Remote hosts have to be
+            listed in <code>images.remotePatterns</code> — all three providers
+            are.
+          </p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Initials and year are only the fallback. The last card above has
+            neither <code>coverImage</code> nor <code>year</code> in its payload,
+            the way the offline fixtures in <code>ExternalMediaService</code> come
+            back without artwork.
+          </p>
         </section>
 
         <section className="flex flex-col gap-3">
@@ -136,6 +166,7 @@ export default function ThemePreviewPage() {
                 key={item.title}
                 title={item.title}
                 year={item.year}
+                image={item.image}
                 type={item.type}
                 size="sm"
               />
@@ -151,6 +182,7 @@ export default function ThemePreviewPage() {
                 key={item.title}
                 title={item.title}
                 year={item.year}
+                image={item.image}
                 type={item.type}
                 size="fluid"
               />

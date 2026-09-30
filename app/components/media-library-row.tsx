@@ -43,6 +43,7 @@ export default function MediaLibraryRow({
   title,
   year,
   studio,
+  image,
   type,
   status,
   progress,
@@ -52,6 +53,7 @@ export default function MediaLibraryRow({
   title: string;
   year?: number;
   studio?: string;
+  image?: string;
   type: MediaType;
   status: MediaStatus;
   progress?: { current: number; total: number; unit: string };
@@ -67,7 +69,7 @@ export default function MediaLibraryRow({
       ].join(" ")}
     >
       <div className="flex items-start gap-3 sm:gap-4 lg:items-center">
-        <MediaAvatarCard title={title} year={year} type={type} />
+        <MediaAvatarCard title={title} year={year} image={image} type={type} />
 
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] leading-tight font-semibold text-zinc-900 dark:text-zinc-50">

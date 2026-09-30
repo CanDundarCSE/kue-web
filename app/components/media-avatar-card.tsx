@@ -1,3 +1,8 @@
+"use client";
+
+import Image from "next/image";
+import { useState } from "react";
+
 export type MediaType = "movie" | "series" | "game" | "anime" | "manga";
 export type MediaAvatarCardSize = "sm" | "md" | "fluid";
 
@@ -15,6 +20,12 @@ const CARD_SIZE: Record<MediaAvatarCardSize, string> = {
   fluid: "aspect-[42/54] w-full",
 };
 
+const CARD_SIZES: Record<MediaAvatarCardSize, string> = {
+  sm: "34px",
+  md: "42px",
+  fluid: "(max-width: 640px) 45vw, 160px",
+};
+
 function getInitials(title: string) {
   const words = title.split(/\s+/).filter(Boolean);
   return (
@@ -30,6 +41,7 @@ export default function MediaAvatarCard({
   title,
   initials,
   year,
+  image,
   type,
   size = "md",
   className,
@@ -37,16 +49,20 @@ export default function MediaAvatarCard({
   title: string;
   initials?: string;
   year?: number;
+  image?: string;
   type: MediaType;
   size?: MediaAvatarCardSize;
   className?: string;
 }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = image !== undefined && image !== "" && !imageFailed;
+
   return (
     <div
       role="img"
       aria-label={year === undefined ? title : `${title} (${year})`}
       className={[
-        "@container flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border",
+        "@container relative flex shrink-0 flex-col items-center justify-center gap-0.5 overflow-hidden rounded-lg border",
         "border-l-[clamp(3px,7cqi,6px)]",
         "border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900",
         MEDIA_ACCENT[type],
@@ -54,26 +70,41 @@ export default function MediaAvatarCard({
         className ?? "",
       ].join(" ")}
     >
-      <span
-        aria-hidden="true"
-        className={[
-          "font-[family-name:var(--font-badge)] text-[clamp(11px,33.3cqi,28px)] leading-none font-semibold tracking-[0.02em]",
-          "text-zinc-900 dark:text-zinc-100",
-        ].join(" ")}
-      >
-        {initials ?? getInitials(title)}
-      </span>
+      {showImage && (
+        <Image
+          src={image}
+          alt=""
+          fill
+          sizes={CARD_SIZES[size]}
+          className="object-cover"
+          onError={() => setImageFailed(true)}
+        />
+      )}
 
-      {size !== "sm" && year !== undefined && (
-        <span
-          aria-hidden="true"
-          className={[
-            "font-[family-name:var(--font-badge)] text-[clamp(6px,16.7cqi,14px)] leading-none tracking-[0.08em]",
-            "text-zinc-400 dark:text-zinc-500",
-          ].join(" ")}
-        >
-          {year}
-        </span>
+      {!showImage && (
+        <>
+          <span
+            aria-hidden="true"
+            className={[
+              "font-[family-name:var(--font-badge)] text-[clamp(11px,33.3cqi,28px)] leading-none font-semibold tracking-[0.02em]",
+              "text-zinc-900 dark:text-zinc-100",
+            ].join(" ")}
+          >
+            {initials ?? getInitials(title)}
+          </span>
+
+          {size !== "sm" && year !== undefined && (
+            <span
+              aria-hidden="true"
+              className={[
+                "font-[family-name:var(--font-badge)] text-[clamp(6px,16.7cqi,14px)] leading-none tracking-[0.08em]",
+                "text-zinc-400 dark:text-zinc-500",
+              ].join(" ")}
+            >
+              {year}
+            </span>
+          )}
+        </>
       )}
     </div>
   );

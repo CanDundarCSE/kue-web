@@ -41,9 +41,8 @@ function formatDay(timestamp: number) {
   });
 }
 
-function buildLevels(values: number[]) {
+function buildLevels(values: number[], top: number) {
   const distinct = [...new Set(values)].sort((a, b) => a - b);
-  const top = CELL_LEVEL.length - 1;
   const levels = new Map<number, number>();
 
   distinct.forEach((value, index) => {
@@ -53,8 +52,8 @@ function buildLevels(values: number[]) {
   return levels;
 }
 
-function levelOf(value: number, levels: Map<number, number>) {
-  return levels.get(value) ?? CELL_LEVEL.length - 1;
+function levelOf(value: number, levels: Map<number, number>, top: number) {
+  return levels.get(value) ?? top;
 }
 
 function describeDay(day: { added: number; completed: number }) {
@@ -75,6 +74,7 @@ export default function ActivityHeatmap({
   today,
   weeks = 26,
   metric = "total",
+  ramp = CELL_LEVEL,
   label,
   className,
 }: {
@@ -82,6 +82,7 @@ export default function ActivityHeatmap({
   today: number | Date;
   weeks?: number;
   metric?: ActivityHeatmapMetric;
+  ramp?: string[];
   label?: string;
   className?: string;
 }) {
@@ -124,7 +125,8 @@ export default function ActivityHeatmap({
     }
   }
 
-  const levels = buildLevels(active);
+  const top = ramp.length - 1;
+  const levels = buildLevels(active, top);
   const activeDays = active.length;
 
   const cells: { key: number; title: string; level: number | null }[] = [];
@@ -139,7 +141,7 @@ export default function ActivityHeatmap({
     cells.push({
       key: day,
       title: `${formatDay(day)} — ${describeDay(total)}`,
-      level: value === 0 ? 0 : levelOf(value, levels),
+      level: value === 0 ? 0 : levelOf(value, levels, top),
     });
   }
 
@@ -162,7 +164,7 @@ export default function ActivityHeatmap({
             <div
               key={cell.key}
               title={cell.title}
-              className={["size-[11px] rounded-[3px]", cell.level === null ? "bg-transparent" : CELL_LEVEL[cell.level]].join(" ")}
+              className={["size-[11px] rounded-[3px]", cell.level === null ? "bg-transparent" : ramp[cell.level]].join(" ")}
             />
           ))}
         </div>

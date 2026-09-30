@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from "react";
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes } from "react";
 
 export type ButtonVariant = "primary" | "secondary";
 export type ButtonSize = "sm" | "md" | "lg";
@@ -24,6 +24,43 @@ const SIZE: Record<ButtonSize, string> = {
   lg: "h-12 gap-2 px-7 text-base",
 };
 
+export function buttonClasses({
+  variant = "primary",
+  size = "md",
+  fullWidth = false,
+  className,
+}: {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  fullWidth?: boolean;
+  className?: string;
+} = {}) {
+  return [
+    "inline-flex shrink-0 select-none items-center justify-center rounded-xl font-sans font-semibold",
+    "transition-colors duration-150 motion-reduce:transition-none",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+    "disabled:pointer-events-none disabled:opacity-50",
+    VARIANT[variant],
+    SIZE[size],
+    fullWidth ? "w-full" : "",
+    className ?? "",
+  ].join(" ");
+}
+
+export function ButtonLink({
+  variant,
+  size,
+  fullWidth,
+  className,
+  ...props
+}: AnchorHTMLAttributes<HTMLAnchorElement> & {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  fullWidth?: boolean;
+}) {
+  return <a {...props} className={buttonClasses({ variant, size, fullWidth, className })} />;
+}
+
 export default function Button({
   variant = "primary",
   size = "md",
@@ -39,16 +76,7 @@ export default function Button({
   return (
     <button
       type={type}
-      className={[
-        "inline-flex shrink-0 select-none items-center justify-center rounded-xl font-sans font-semibold",
-        "transition-colors duration-150 motion-reduce:transition-none",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-        "disabled:pointer-events-none disabled:opacity-50",
-        VARIANT[variant],
-        SIZE[size],
-        fullWidth ? "w-full" : "",
-        className ?? "",
-      ].join(" ")}
+      className={buttonClasses({ variant, size, fullWidth, className })}
       {...props}
     />
   );

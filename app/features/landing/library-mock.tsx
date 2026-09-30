@@ -75,8 +75,8 @@ function WatchToggle({
         "active:scale-90 motion-reduce:transition-none",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
         watched
-          ? "border-media-game bg-media-game text-white"
-          : "border-line-2 text-ink-2 hover:text-ink",
+          ? "border-emerald-600/40 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500 dark:text-zinc-950"
+          : "border-line-2 bg-surface text-ink-2 hover:text-ink",
       ].join(" ")}
     >
       {watched ? <Check aria-hidden="true" className="size-3.5" /> : <Eye aria-hidden="true" className="size-3.5" />}

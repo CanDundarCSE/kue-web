@@ -1,3 +1,6 @@
+import ActivityHeatmap, {
+  type ActivityHeatmapItem,
+} from "@/app/components/activity-heatmap";
 import Button from "@/app/components/button";
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
 import MediaLibraryRow from "@/app/components/media-library-row";
@@ -16,6 +19,36 @@ const COVERS: Record<string, string> = {
   Berserk: "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/bx30002-Cul4OeN7bYtn.jpg",
   Parasite: "https://image.tmdb.org/t/p/w500/nx7TmJDMkgyBc09DVo5ze52Wt3F.jpg",
 };
+
+function pseudoRandom(seed: number) {
+  let value = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b);
+  value ^= value >>> 13;
+  value = Math.imul(value, 0xc2b2ae35);
+  value ^= value >>> 16;
+  return (value >>> 0) / 4294967296;
+}
+
+const SAMPLE_TODAY = Math.floor(Date.now() / 86_400_000) * 86_400_000;
+
+const SAMPLE_ACTIVITY: ActivityHeatmapItem[] = (() => {
+  const items: ActivityHeatmapItem[] = [];
+
+  for (let back = 230; back >= 0; back--) {
+    const day = SAMPLE_TODAY - back * 86_400_000;
+    const addedRoll = pseudoRandom(day);
+    const completedRoll = pseudoRandom(day + 977);
+    const added = addedRoll < 0.68 ? 0 : 1 + (Math.floor(addedRoll * 100) % 3);
+    const completed = completedRoll < 0.82 ? 0 : 1;
+
+    if (added === 0 && completed === 0) {
+      continue;
+    }
+
+    items.push({ date: new Date(day).toISOString().slice(0, 10), added, completed });
+  }
+
+  return items;
+})();
 
 const SAMPLE_LIBRARY: {
   title: string;
@@ -80,6 +113,42 @@ export default function ThemePreviewPage() {
             respectively, and both collapse onto a second line under the title on
             narrow screens. Zebra striping comes from the parent&apos;s{" "}
             <code>odd:</code> variant, not the row.
+          </p>
+        </section>
+
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold">Activity heatmap</h2>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-950">
+              <ActivityHeatmap items={SAMPLE_ACTIVITY} today={SAMPLE_TODAY} />
+            </div>
+            <div className="dark rounded-xl border border-zinc-800 bg-zinc-950 p-5">
+              <ActivityHeatmap items={SAMPLE_ACTIVITY} today={SAMPLE_TODAY} />
+            </div>
+          </div>
+          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-950">
+            <ActivityHeatmap
+              items={SAMPLE_ACTIVITY}
+              today={SAMPLE_TODAY}
+              weeks={12}
+              metric="completed"
+              label="Last 12 weeks — completions only"
+            />
+          </div>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            A column is a week, a row is a weekday, and the window is padded so
+            the first day lands on a Monday. Levels are the distinct totals the
+            data actually contains, spread across the ramp, so the chart never
+            invents a scale — with only one distinct value every active day is
+            the same tone. Days before the window and days after today never
+            paint, and cells carry a native <code>title</code> tooltip while the
+            grid itself is a single <code>role=&quot;img&quot;</code> with a
+            summary label. The dark card is forced with a nested{" "}
+            <code>dark</code> class; the grid scrolls horizontally on narrow
+            screens instead of squashing the cells. <code>today</code> is
+            required because the React Compiler lint rules forbid reading the
+            clock during render — the data layer that already asked the API for{" "}
+            <code>?days=</code> passes the date it used.
           </p>
         </section>
 

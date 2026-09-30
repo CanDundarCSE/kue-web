@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ButtonLink } from "@/app/components/button";
 import ThemeToggleButton from "@/app/components/theme-toggle-button";
+import LogoMark from "@/app/features/landing/logo-mark";
 
 const LINKS = [
   { id: "formats", label: "Formats" },
@@ -44,7 +45,7 @@ export default function SiteNav() {
     <nav className="sticky top-0 z-40 flex h-16 items-center gap-7 border-b border-line bg-background/85 backdrop-blur-xl">
       <div className="mx-auto flex w-[min(1140px,92vw)] items-center gap-7">
         <a href="#top" className="flex items-center gap-2.5 text-[16px] font-semibold tracking-[-0.01em]">
-          <span aria-hidden="true" className="size-2.5 rounded-[3px] bg-accent" />
+          <LogoMark />
           Kue
         </a>
 

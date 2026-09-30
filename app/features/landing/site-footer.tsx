@@ -1,3 +1,5 @@
+import LogoMark from "@/app/features/landing/logo-mark";
+
 const LINKS = [
   { label: "Formats", href: "#formats" },
   { label: "Features", href: "#features" },
@@ -11,8 +13,11 @@ export default function SiteFooter() {
       <div className="mx-auto w-[min(1140px,92vw)]">
         <div className="flex flex-wrap items-start justify-between gap-7 border-b border-line pb-11">
           <div>
-            <a href="#top" className="flex items-center gap-2.5 text-[16px] font-semibold">
-              <span aria-hidden="true" className="size-2.5 rounded-[3px] bg-accent" />
+            <a
+              href="#top"
+              className="flex items-center gap-2.5 text-[16px] font-semibold"
+            >
+              <LogoMark />
               Kue
             </a>
             <p className="mt-3 text-[13px] whitespace-nowrap text-ink-2">
@@ -37,7 +42,7 @@ export default function SiteFooter() {
         </div>
 
         <div className="pt-6 text-[8.5px] font-mono tracking-[0.12em] text-ink-3 uppercase">
-          © 2025 Kue
+          © 2026 Kue
         </div>
       </div>
     </footer>

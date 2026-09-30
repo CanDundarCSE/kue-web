@@ -1,54 +1,75 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useRef, useSyncExternalStore } from "react";
+import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
 
-type Theme = "light" | "dark";
+const TRANSITION_MS = 520;
 
-const STORAGE_KEY = "kue-theme";
-
-function readCurrentTheme(): Theme {
-  return document.documentElement.classList.contains("dark") ? "dark" : "light";
+function subscribeToNothing() {
+  return () => {};
 }
 
-function subscribeToTheme(onStoreChange: () => void) {
-  const observer = new MutationObserver(onStoreChange);
-  observer.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ["class"],
-  });
-  return () => observer.disconnect();
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 export default function ThemeToggleButton({ className }: { className?: string }) {
-  const theme = useSyncExternalStore(subscribeToTheme, readCurrentTheme, () => "light");
+  const { resolvedTheme, setTheme } = useTheme();
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const mounted = useSyncExternalStore(
+    subscribeToNothing,
+    () => true,
+    () => false,
+  );
 
   const toggleTheme = useCallback(() => {
-    const next: Theme = readCurrentTheme() === "dark" ? "light" : "dark";
-    const root = document.documentElement;
+    const next = resolvedTheme === "dark" ? "light" : "dark";
+    const reduceMotion = prefersReducedMotion();
+    const supportsViewTransition =
+      typeof document.startViewTransition === "function" && !reduceMotion;
 
-    root.classList.remove("light", "dark");
-    root.classList.add(next);
-    root.style.colorScheme = next;
+    if (!supportsViewTransition) {
+      setTheme(next);
+      return;
+    }
 
-    try {
-      window.localStorage.setItem(STORAGE_KEY, next);
-    } catch {}
-  }, []);
+    const origin = buttonRef.current?.getBoundingClientRect();
+    const radius = origin
+      ? Math.hypot(
+          Math.max(origin.left, window.innerWidth - origin.right),
+          Math.max(origin.top, window.innerHeight - origin.top),
+        )
+      : 0;
+
+    document.documentElement.animate(
+      { clipPath: [`circle(0px at ${origin?.left ?? 0}px ${origin?.top ?? 0}px)`, `circle(${radius}px at ${origin?.left ?? 0}px ${origin?.top ?? 0}px)`] },
+      {
+        duration: TRANSITION_MS,
+        easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+        pseudoElement: "::view-transition-new(root)",
+      },
+    );
+
+    document.startViewTransition(() => setTheme(next));
+  }, [resolvedTheme, setTheme]);
+
+  const isDark = mounted && resolvedTheme === "dark";
 
   return (
     <button
+      ref={buttonRef}
       type="button"
       onClick={toggleTheme}
-      aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       className={[
         "relative grid size-10 shrink-0 place-items-center rounded-xl",
         "before:absolute before:-inset-1 before:content-['']",
         "bg-zinc-900 text-white transition-[background-color,color,transform] duration-200",
         "hover:bg-zinc-700 active:scale-95",
         "dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
-        "dark:focus-visible:ring-zinc-400 dark:focus-visible:ring-offset-zinc-950",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 focus-visible:ring-offset-2",
+        "focus-visible:ring-offset-white dark:focus-visible:ring-zinc-400 dark:focus-visible:ring-offset-zinc-950",
         "motion-reduce:transition-none",
         className ?? "",
       ].join(" ")}

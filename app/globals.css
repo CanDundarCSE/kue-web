@@ -82,6 +82,20 @@ body {
   color: #ffffff;
 }
 
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2147483646;
+}
+
 [data-reveal] {
   transition:
     opacity 0.6s var(--ease),
@@ -142,6 +156,12 @@ html.kue-js [data-reveal].is-revealed {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 
   html.kue-js [data-reveal] {

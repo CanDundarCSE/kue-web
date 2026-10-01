@@ -1,3 +1,12 @@
+"use client";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/app/components/ui/tooltip";
+
 export type ActivityHeatmapItem = {
   date: string;
   added?: number;
@@ -154,21 +163,35 @@ export default function ActivityHeatmap({
         <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
       </div>
 
-      <div className="overflow-x-auto">
-        <div
-          role="img"
-          aria-label={`${activeDays} active days in the last ${window} weeks — ${addedTotal} added, ${completedTotal} completed`}
-          className="grid grid-flow-col grid-rows-7 gap-[3px]"
-        >
-          {cells.map((cell) => (
-            <div
-              key={cell.key}
-              title={cell.title}
-              className={["size-[11px] rounded-[3px]", cell.level === null ? "bg-transparent" : ramp[cell.level]].join(" ")}
-            />
-          ))}
+      <TooltipProvider>
+        <div className="overflow-x-auto">
+          <div
+            role="img"
+            aria-label={`${activeDays} active days in the last ${window} weeks — ${addedTotal} added, ${completedTotal} completed`}
+            className="grid grid-flow-col grid-rows-7 gap-[3px]"
+          >
+            {cells.map((cell) => {
+              const cellClass = [
+                "size-[11px] rounded-[3px]",
+                cell.level === null ? "bg-transparent" : ramp[cell.level],
+              ].join(" ");
+
+              if (cell.level === null) {
+                return <div key={cell.key} className={cellClass} />;
+              }
+
+              return (
+                <Tooltip key={cell.key}>
+                  <TooltipTrigger asChild>
+                    <div className={cellClass} />
+                  </TooltipTrigger>
+                  <TooltipContent>{cell.title}</TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      </TooltipProvider>
     </div>
   );
 }

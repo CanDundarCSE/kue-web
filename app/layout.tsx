@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
-import { Fragment_Mono, Instrument_Sans, Instrument_Serif, Roboto_Mono } from "next/font/google";
+import { Fragment_Mono, Instrument_Serif, Montserrat, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 
-const instrumentSans = Instrument_Sans({
-  variable: "--font-instrument-sans",
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
   subsets: ["latin"],
   style: ["normal", "italic"],
 });
@@ -38,7 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${instrumentSans.variable} ${instrumentSerif.variable} ${fragmentMono.variable} ${robotoMono.variable} h-full antialiased`}
+      className={`${montserrat.variable} ${instrumentSerif.variable} ${fragmentMono.variable} ${robotoMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider

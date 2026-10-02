@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Button from "@/app/components/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/app/components/ui/tooltip";
+import { readApiError } from "@/lib/api/client";
 
 type FormState = {
   email: string;
@@ -21,6 +23,7 @@ const inputClasses = [
 ].join(" ");
 
 export default function SignInForm() {
+  const router = useRouter();
   const [form, setForm] = useState<FormState>({
     email: "",
     password: "",
@@ -70,7 +73,7 @@ export default function SignInForm() {
     setMessage(null);
 
     try {
-      const response = await fetch("/api/login", {
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -81,8 +84,7 @@ export default function SignInForm() {
       });
 
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || "Sign in failed");
+        throw new Error(await readApiError(response, "Sign in failed"));
       }
 
       setMessage({
@@ -90,6 +92,8 @@ export default function SignInForm() {
         text: "Signed in successfully. Redirecting...",
       });
       setForm({ email: "", password: "" });
+      router.push("/");
+      router.refresh();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Something went wrong";
       setMessage({ type: "error", text: msg });

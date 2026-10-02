@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Button from "@/app/components/button";
 import {
   Tooltip,
@@ -8,9 +9,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/app/components/ui/tooltip";
+import { readApiError } from "@/lib/api/client";
 
 type FormState = {
-  displayName: string;
+  username: string;
   email: string;
   password: string;
 };
@@ -36,9 +38,6 @@ function validatePassword(password: string): string | null {
   if (password.length < 8) return "Minimum 8 characters";
   if (!/[A-Z]/.test(password))
     return "Must include at least one uppercase letter";
-  if (!/[a-z]/.test(password))
-    return "Must include at least one lowercase letter";
-  if (!/\d/.test(password)) return "Must include at least one number";
   if (!/[^A-Za-z0-9]/.test(password))
     return "Must include at least one special character";
   return null;
@@ -56,14 +55,13 @@ const inputClasses = [
 const PASSWORD_REQUIREMENTS = [
   "At least 8 characters",
   "One uppercase letter (A-Z)",
-  "One lowercase letter (a-z)",
-  "One number (0-9)",
   "One special character (!@#$%^&*)",
 ];
 
 export default function RegisterForm() {
+  const router = useRouter();
   const [form, setForm] = useState<FormState>({
-    displayName: "",
+    username: "",
     email: "",
     password: "",
   });
@@ -91,7 +89,12 @@ export default function RegisterForm() {
 
   const validate = (): FormErrors => {
     const errs: FormErrors = {};
-    if (!form.displayName.trim()) errs.displayName = "Display name is required";
+    const username = form.username.trim();
+    if (!username) {
+      errs.username = "Username is required";
+    } else if (username.length < 3 || username.length > 50) {
+      errs.username = "Username must be between 3 and 50 characters";
+    }
     if (!form.email.trim()) {
       errs.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(form.email)) {
@@ -114,11 +117,11 @@ export default function RegisterForm() {
     setMessage(null);
 
     try {
-      const response = await fetch("/api/register", {
+      const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          displayName: form.displayName,
+          username: form.username.trim(),
           email: form.email,
           password: form.password,
         }),
@@ -126,15 +129,16 @@ export default function RegisterForm() {
       });
 
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || "Registration failed");
+        throw new Error(await readApiError(response, "Registration failed"));
       }
 
       setMessage({
         type: "success",
-        text: "Account created. Check your email to verify.",
+        text: "Account created. Redirecting...",
       });
-      setForm({ displayName: "", email: "", password: "" });
+      setForm({ username: "", email: "", password: "" });
+      router.push("/");
+      router.refresh();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Something went wrong";
       setMessage({ type: "error", text: msg });
@@ -174,24 +178,25 @@ export default function RegisterForm() {
         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           <div>
             <label
-              htmlFor="displayName"
+              htmlFor="username"
               className="mb-1.5 block text-[10px] font-mono tracking-[0.14em] text-ink-3 uppercase"
             >
-              Display Name
+              Username
             </label>
             <input
               type="text"
-              id="displayName"
-              name="displayName"
-              value={form.displayName}
+              id="username"
+              name="username"
+              value={form.username}
               onChange={handleChange}
-              autoComplete="name"
+              autoComplete="username"
+              maxLength={50}
               className={inputClasses}
               placeholder="Your username"
             />
-            {errors.displayName && (
+            {errors.username && (
               <p className="mt-1 text-[12px] text-accent">
-                {errors.displayName}
+                {errors.username}
               </p>
             )}
           </div>

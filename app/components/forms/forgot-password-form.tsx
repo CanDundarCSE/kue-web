@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Button from "@/app/components/button";
+import { readApiError } from "@/lib/api/client";
 
 type FormState = {
   email: string;
@@ -63,7 +64,7 @@ export default function ForgotPasswordForm() {
     setMessage(null);
 
     try {
-      const response = await fetch("/api/forgot-password", {
+      const response = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -73,8 +74,7 @@ export default function ForgotPasswordForm() {
       });
 
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || "Request failed");
+        throw new Error(await readApiError(response, "Request failed"));
       }
 
       setMessage({

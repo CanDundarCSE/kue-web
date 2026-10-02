@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import SignInForm from "@/app/components/forms/sign-in-form";
+import ForgotPasswordForm from "@/app/components/forms/forgot-password-form";
 
 export const metadata: Metadata = {
-  title: "Sign in — Kue",
-  description: "Sign in to your Kue library.",
+  title: "Forgot password — Kue",
+  description: "Reset your Kue account password.",
 };
 
 const FEATURES = [
@@ -23,7 +23,7 @@ const FEATURES = [
   },
 ];
 
-export default function LoginPage() {
+export default function ForgotPasswordPage() {
   return (
     <main className="flex min-h-full items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
       <div className="grid w-full max-w-[820px] overflow-hidden rounded-2xl border border-line bg-background shadow-[var(--shadow)] sm:grid-cols-[1fr_1fr]">
@@ -63,7 +63,7 @@ export default function LoginPage() {
         </div>
 
         <div className="border-t border-line sm:border-t-0 sm:border-l bg-surface-2/40 p-8 sm:p-10">
-          <SignInForm />
+          <ForgotPasswordForm />
 
           <div className="mt-8 flex items-center justify-between border-t border-line pt-5">
             <span className="text-[9px] font-mono tracking-[0.14em] text-ink-3 uppercase">

@@ -6,8 +6,8 @@ import { Bell, Search } from "lucide-react";
 
 import AppSidebarMenu from "@/app/components/app-sidebar-menu";
 import ThemeToggleButton from "@/app/components/theme-toggle-button";
+import UserAccountMenu from "@/app/components/user-account-menu";
 import { DEFAULT_ITEMS, isActive } from "@/app/components/app-sidebar";
-import { initialOf } from "@/lib/current-user";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 
@@ -118,28 +118,7 @@ export default function HomeTopBar() {
           />
         </button>
 
-        <button
-          type="button"
-          aria-label={user ? `Account — ${user.username}` : "Account"}
-          className={cn(
-            "grid size-9 shrink-0 place-items-center rounded-lg border border-line bg-surface-2 sm:size-10",
-            "text-[13px] font-semibold text-foreground",
-            "transition-colors duration-150 motion-reduce:transition-none",
-            "hover:bg-surface-3",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
-          )}
-        >
-          {user ? (
-            initialOf(user.username)
-          ) : loading ? (
-            <span
-              aria-hidden="true"
-              className="size-3.5 animate-pulse rounded bg-surface-3"
-            />
-          ) : (
-            "•"
-          )}
-        </button>
+        <UserAccountMenu user={user} loading={loading} />
       </div>
     </header>
   );

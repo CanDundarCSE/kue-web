@@ -24,57 +24,67 @@ export type AppSidebarItem = {
   count?: number;
 };
 
-const DEFAULT_ITEMS: AppSidebarItem[] = [
-  { href: "/", label: "Home", icon: House },
+export const DEFAULT_ITEMS: AppSidebarItem[] = [
+  { href: "/home", label: "Home", icon: House },
   { href: "/library", label: "Library", icon: ChartColumn, count: 8 },
   { href: "/discover", label: "Discover", icon: Compass },
   { href: "/stats", label: "Stats", icon: TrendingUp },
   { href: "/profile", label: "Profile", icon: User },
 ];
 
-function isActive(pathname: string, href: string) {
+export function isActive(pathname: string, href: string) {
   if (href.startsWith("#")) return false;
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function NavRow({ item, active }: { item: AppSidebarItem; active: boolean }) {
+function NavRow({
+  item,
+  active,
+  inSheet,
+}: {
+  item: AppSidebarItem;
+  active: boolean;
+  inSheet: boolean;
+}) {
   const Icon = item.icon;
 
-  return (
-    <SheetClose asChild>
-      <Link
-        href={item.href}
-        data-active={active || undefined}
-        aria-current={active ? "page" : undefined}
-        className={[
-          "flex h-11 items-center gap-3 rounded-lg px-3 text-[15px] text-ink-2",
-          "transition-colors duration-150 motion-reduce:transition-none",
-          "hover:bg-surface-3 hover:text-foreground",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
-          "data-[active]:bg-surface-3 data-[active]:text-foreground",
-        ].join(" ")}
-      >
-        <Icon className="size-[18px] shrink-0" strokeWidth={1.75} />
-        <span className="truncate">{item.label}</span>
-        {item.count !== undefined ? (
-          <span className="ml-auto font-mono text-[11px] tabular-nums text-ink-3">
-            {item.count}
-          </span>
-        ) : null}
-      </Link>
-    </SheetClose>
+  const link = (
+    <Link
+      href={item.href}
+      data-active={active || undefined}
+      aria-current={active ? "page" : undefined}
+      className={[
+        "flex h-11 items-center gap-3 rounded-lg px-3 text-[15px] text-ink-2",
+        "transition-colors duration-150 motion-reduce:transition-none",
+        "hover:bg-surface-3 hover:text-foreground",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+        "data-[active]:bg-surface-3 data-[active]:text-foreground",
+      ].join(" ")}
+    >
+      <Icon className="size-[18px] shrink-0" strokeWidth={1.75} />
+      <span className="truncate">{item.label}</span>
+      {item.count !== undefined ? (
+        <span className="ml-auto font-mono text-[11px] tabular-nums text-ink-3">
+          {item.count}
+        </span>
+      ) : null}
+    </Link>
   );
+
+  return inSheet ? <SheetClose asChild>{link}</SheetClose> : link;
 }
 
 export default function AppSidebar({
   items = DEFAULT_ITEMS,
   onAddTitle,
   className,
+  inSheet = false,
 }: {
   items?: AppSidebarItem[];
   onAddTitle?: () => void;
   className?: string;
+  inSheet?: boolean;
 }) {
   const pathname = usePathname();
 
@@ -82,20 +92,27 @@ export default function AppSidebar({
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       <div className="flex shrink-0 items-center gap-2.5 px-5 pt-5 pb-6">
         <LogoMark />
-        <SheetTitle className="pr-10 text-[16px] tracking-[-0.01em]">
-          Kue
-        </SheetTitle>
-        <SheetDescription>
-          {items.map((item) => item.label).join(", ")}
-        </SheetDescription>
+        {inSheet ? (
+          <SheetTitle className="pr-10 text-[16px] tracking-[-0.01em]">Kue</SheetTitle>
+        ) : (
+          <span className="pr-10 text-[16px] font-semibold tracking-[-0.01em]">Kue</span>
+        )}
+        {inSheet ? (
+          <SheetDescription>
+            {items.map((item) => item.label).join(", ")}
+          </SheetDescription>
+        ) : (
+          <p className="sr-only">{items.map((item) => item.label).join(", ")}</p>
+        )}
       </div>
 
-      <nav className="flex shrink-0 flex-col gap-0.5 px-3">
+      <nav aria-label="Primary" className="flex shrink-0 flex-col gap-0.5 px-3">
         {items.map((item) => (
           <NavRow
             key={item.label}
             item={item}
             active={isActive(pathname, item.href)}
+            inSheet={inSheet}
           />
         ))}
       </nav>

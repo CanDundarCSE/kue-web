@@ -45,7 +45,7 @@ export default function AppSidebarMenu({
       </SheetTrigger>
 
       <SheetContent side="left" className="w-[17.5rem] sm:w-[18.5rem]">
-        <AppSidebar items={items} onAddTitle={onAddTitle} />
+        <AppSidebar items={items} onAddTitle={onAddTitle} inSheet />
       </SheetContent>
     </Sheet>
   );

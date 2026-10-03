@@ -92,7 +92,7 @@ export default function SignInForm() {
         text: "Signed in successfully. Redirecting...",
       });
       setForm({ email: "", password: "" });
-      router.push("/");
+      router.push("/home");
       router.refresh();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Something went wrong";

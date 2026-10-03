@@ -137,7 +137,7 @@ export default function RegisterForm() {
         text: "Account created. Redirecting...",
       });
       setForm({ username: "", email: "", password: "" });
-      router.push("/");
+      router.push("/home");
       router.refresh();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Something went wrong";

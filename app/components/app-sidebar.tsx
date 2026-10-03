@@ -4,8 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ChartColumn,
+  ChevronLeft,
   Compass,
   House,
+  Menu,
   Plus,
   TrendingUp,
   User,
@@ -75,54 +77,140 @@ function NavRow({
   return inSheet ? <SheetClose asChild>{link}</SheetClose> : link;
 }
 
+// Icon-only row used by the collapsed desktop rail. Labels aren't visible, so
+// each one carries a native tooltip (`title`) + `aria-label`, and any badge
+// count shows as a small dot since there's no room for the number.
+function CollapsedNavRow({ item, active }: { item: AppSidebarItem; active: boolean }) {
+  const Icon = item.icon;
+
+  return (
+    <Link
+      href={item.href}
+      title={item.label}
+      aria-label={item.label}
+      data-active={active || undefined}
+      aria-current={active ? "page" : undefined}
+      className={[
+        "relative grid size-9 place-items-center rounded-lg text-ink-2",
+        "transition-colors duration-150 motion-reduce:transition-none",
+        "hover:bg-surface-3 hover:text-foreground",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+        "data-[active]:bg-surface-3 data-[active]:text-foreground",
+      ].join(" ")}
+    >
+      <Icon className="size-[18px]" strokeWidth={1.75} />
+      {item.count !== undefined ? (
+        <span
+          aria-hidden
+          className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-accent ring-2 ring-background"
+        />
+      ) : null}
+    </Link>
+  );
+}
+
 export default function AppSidebar({
   items = DEFAULT_ITEMS,
   onAddTitle,
   className,
   inSheet = false,
+  collapsed = false,
+  onToggleCollapse,
 }: {
   items?: AppSidebarItem[];
   onAddTitle?: () => void;
   className?: string;
   inSheet?: boolean;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }) {
   const pathname = usePathname();
 
+  // The collapse control only makes sense in the persistent desktop rail. The
+  // mobile sheet closes itself via SheetClose, so it never shows the toggle.
+  const showToggle = !inSheet && typeof onToggleCollapse === "function";
+  const ToggleIcon = collapsed ? Menu : ChevronLeft;
+
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
-      <div className="flex shrink-0 items-center gap-2.5 px-5 pt-5 pb-6">
-        <LogoMark />
-        {inSheet ? (
-          <SheetTitle className="pr-10 text-[16px] tracking-[-0.01em]">Kue</SheetTitle>
-        ) : (
-          <span className="pr-10 text-[16px] font-semibold tracking-[-0.01em]">Kue</span>
+      <div
+        className={cn(
+          "flex shrink-0 items-center gap-2.5",
+          collapsed ? "justify-center px-2 pt-4" : "px-5 pt-5 pb-6",
         )}
+      >
+        {!collapsed && (
+          <>
+            <LogoMark />
+            {inSheet ? (
+              // pr-10 keeps the title clear of the sheet's own close (X) button.
+              <SheetTitle className="pr-10 text-[16px] tracking-[-0.01em]">Kue</SheetTitle>
+            ) : (
+              <span className="text-[16px] font-semibold tracking-[-0.01em]">Kue</span>
+            )}
+          </>
+        )}
+
         {inSheet ? (
           <SheetDescription>
             {items.map((item) => item.label).join(", ")}
           </SheetDescription>
-        ) : (
+        ) : !collapsed ? (
           <p className="sr-only">{items.map((item) => item.label).join(", ")}</p>
+        ) : null}
+
+        {/* When open the toggle sits at the right edge of the header; when
+            collapsed the whole row is just this centered button. */}
+        {showToggle && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            aria-label={collapsed ? "Open sidebar" : "Collapse sidebar"}
+            aria-expanded={!collapsed}
+            className={[
+              "grid size-9 shrink-0 place-items-center rounded-lg text-ink-2",
+              "transition-colors duration-150 motion-reduce:transition-none",
+              "hover:bg-surface-2 hover:text-foreground",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+              !collapsed && "ml-auto",
+            ].filter(Boolean).join(" ")}
+          >
+            <ToggleIcon className="size-5" strokeWidth={1.75} />
+          </button>
         )}
       </div>
 
-      <nav aria-label="Primary" className="flex shrink-0 flex-col gap-0.5 px-3">
-        {items.map((item) => (
-          <NavRow
-            key={item.label}
-            item={item}
-            active={isActive(pathname, item.href)}
-            inSheet={inSheet}
-          />
-        ))}
-      </nav>
+      {collapsed ? (
+        <nav aria-label="Primary" className="flex flex-col items-center gap-1 px-2 pt-3">
+          {items.map((item) => (
+            <CollapsedNavRow
+              key={item.label}
+              item={item}
+              active={isActive(pathname, item.href)}
+            />
+          ))}
+        </nav>
+      ) : (
+        <>
+          <nav aria-label="Primary" className="flex shrink-0 flex-col gap-0.5 px-3">
+            {items.map((item) => (
+              <NavRow
+                key={item.label}
+                item={item}
+                active={isActive(pathname, item.href)}
+                inSheet={inSheet}
+              />
+            ))}
+          </nav>
 
-      <div className="mt-auto shrink-0 px-5 pb-5">
-        <Button fullWidth onClick={onAddTitle}>
-          <Plus className="size-4" strokeWidth={2.25} />
-          Add title
-        </Button>
-      </div>
+          <div className="mt-auto shrink-0 px-5 pb-5">
+            <Button fullWidth onClick={onAddTitle}>
+              <Plus className="size-4" strokeWidth={2.25} />
+              Add title
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

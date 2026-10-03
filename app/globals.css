@@ -161,6 +161,86 @@ html.kue-js [data-reveal].is-revealed {
   }
 }
 
+/* Radix holds the node mounted while a CSS animation runs, so the exit
+   keyframes below are what make the drawer animate out instead of vanishing. */
+[data-slot="sheet-overlay"] {
+  animation: kue-fade-in 0.2s var(--ease);
+}
+
+[data-slot="sheet-overlay"][data-state="closed"] {
+  animation: kue-fade-out 0.18s var(--ease);
+}
+
+[data-slot="sheet-content"][data-side="left"] {
+  animation: kue-sheet-left-in 0.26s var(--ease);
+}
+
+[data-slot="sheet-content"][data-side="left"][data-state="closed"] {
+  animation: kue-sheet-left-out 0.2s var(--ease);
+}
+
+[data-slot="sheet-content"][data-side="right"] {
+  animation: kue-sheet-right-in 0.26s var(--ease);
+}
+
+[data-slot="sheet-content"][data-side="right"][data-state="closed"] {
+  animation: kue-sheet-right-out 0.2s var(--ease);
+}
+
+@keyframes kue-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes kue-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes kue-sheet-left-in {
+  from {
+    translate: -100% 0;
+  }
+  to {
+    translate: 0 0;
+  }
+}
+
+@keyframes kue-sheet-left-out {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: -100% 0;
+  }
+}
+
+@keyframes kue-sheet-right-in {
+  from {
+    translate: 100% 0;
+  }
+  to {
+    translate: 0 0;
+  }
+}
+
+@keyframes kue-sheet-right-out {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: 100% 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

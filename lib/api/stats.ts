@@ -4,6 +4,7 @@ export type StatsOverview = {
   totalItems: number;
   totalCompleted: number;
   totalInProgress: number;
+  totalFavorites: number;
 };
 
 // The dashboard greeting and the week card both need the overview, and on a

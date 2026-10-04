@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/app/components/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/app/components/ui/tooltip";
+import { TooltipProvider } from "@/app/components/ui/tooltip";
 import { readApiError } from "@/lib/api/client";
 
 type FormState = {

@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 
 import AppSidebar from "@/app/components/app-sidebar";
-import HomeTopBar from "@/app/features/home/topbar";
+import AppTopBar from "@/app/components/app-topbar";
 import { CurrentUserProvider } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +29,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <HomeTopBar />
+          <AppTopBar />
           <main className="flex-1">{children}</main>
         </div>
       </div>

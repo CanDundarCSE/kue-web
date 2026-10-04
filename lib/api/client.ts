@@ -14,8 +14,19 @@ function isExcluded(path: string) {
 let refreshInFlight: Promise<CurrentUser | null> | null = null;
 let redirectStarted = false;
 
+// Public auth pages host the session provider but a missing session is their
+// normal state: a dead /me there must not redirect, or /login would bounce
+// onto itself in a reload loop.
+const PUBLIC_AUTH_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
+
+function isPublicAuthPage() {
+  if (typeof window === "undefined") return false;
+  const path = window.location.pathname;
+  return PUBLIC_AUTH_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
+}
+
 function startSignInRedirect() {
-  if (redirectStarted || typeof window === "undefined") return;
+  if (redirectStarted || typeof window === "undefined" || isPublicAuthPage()) return;
   redirectStarted = true;
   // A full navigation is deliberate: this fires from a fetch interceptor with
   // no router context, and discarding all client state is the point of a

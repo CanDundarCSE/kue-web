@@ -1,9 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import ContinueList from "@/app/features/home/continue-list";
 import FriendsCard from "@/app/features/home/friends-card";
 import SectionLabel from "@/app/features/home/section-label";
 import WeekCard from "@/app/features/home/week-card";
+import { fetchOverview } from "@/lib/api/stats";
 import { useCurrentUser } from "@/lib/use-current-user";
 
 function getPeriod(hour: number) {
@@ -43,12 +46,41 @@ function NameSkeleton() {
   );
 }
 
+function CountSkeleton() {
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-block h-3.5 w-16 animate-pulse rounded-md bg-surface-3 align-[-0.15em]"
+    />
+  );
+}
+
 export default function Dashboard({ now }: { now: number }) {
   const { user, loading } = useCurrentUser();
+  const [inProgress, setInProgress] = useState<number | null>(null);
   const date = new Date(now);
   const period = getPeriod(date.getHours());
 
   const name = user?.username;
+
+  // Real in-progress count for the greeting line; the streak had no backend
+  // backing, so the subtitle now states what the data actually says.
+  useEffect(() => {
+    if (loading || user === null) return;
+
+    let cancelled = false;
+
+    fetchOverview()
+      .then((data) => {
+        if (cancelled) return;
+        setInProgress(data.totalInProgress);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, loading]);
 
   return (
     <div className="mx-auto w-full max-w-[1160px] px-5 py-8 sm:px-8 sm:py-10">
@@ -64,7 +96,15 @@ export default function Dashboard({ now }: { now: number }) {
         </h1>
 
         <p className="mt-3 text-[14px] text-ink-2">
-          5 in progress · 23-day streak — {getTagline(period)}.
+          {inProgress === null ? (
+            <CountSkeleton />
+          ) : inProgress > 0 ? (
+            <>{inProgress} in progress</>
+          ) : (
+            <>Nothing in progress yet</>
+          )}
+          {" — "}
+          {getTagline(period)}.
         </p>
       </section>
 

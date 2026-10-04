@@ -50,10 +50,9 @@ export function clearSession(cookieStore: CookieStore, isSecure: boolean) {
   });
 }
 
-export function writeTokens(
+export function writeAccessToken(
   cookieStore: CookieStore,
   accessToken: string,
-  refreshToken: string | null,
   isSecure: boolean,
 ) {
   cookieStore.set(ACCESS_COOKIE, accessToken, {
@@ -63,6 +62,15 @@ export function writeTokens(
     path: ACCESS_COOKIE_PATH,
     maxAge: ACCESS_MAX_AGE_SECONDS,
   });
+}
+
+export function writeTokens(
+  cookieStore: CookieStore,
+  accessToken: string,
+  refreshToken: string | null,
+  isSecure: boolean,
+) {
+  writeAccessToken(cookieStore, accessToken, isSecure);
   if (refreshToken) {
     cookieStore.set(REFRESH_COOKIE, refreshToken, {
       httpOnly: true,
@@ -117,44 +125,61 @@ export function refreshTokens(refreshToken: string): Promise<Response> {
   });
 }
 
-export type RotateResult =
-  | { ok: true; accessToken: string; refreshToken: string | null }
+export type RotationOutcome =
+  | { ok: true; accessToken: string; refreshToken: string | null; user: unknown }
   | { ok: false; status: 401 | 502; message: string };
 
-// Rotate the session using the refresh token cookie and rewrite both cookies in
-// place so the next request carries the fresh pair. The backend revokes ALL of a
-// user's sessions if a rotated refresh token is replayed, so callers must never
-// have two rotations in flight at once (enforced on the client by the
-// single-flight guard in use-current-user).
-export async function rotateSession(
-  cookieStore: CookieStore,
-  isSecure: boolean,
-): Promise<RotateResult> {
-  const refreshToken = cookieStore.get(REFRESH_COOKIE)?.value;
-  if (!refreshToken) {
-    return { ok: false, status: 401, message: "Not signed in." };
+const inFlightRotations = new Map<string, Promise<RotationOutcome>>();
+
+// In-process single-flight rotation, keyed by the refresh token. The browser
+// shares one refresh cookie across every tab, so parallel requests carrying
+// the same token — /api/auth/me and /api/auth/refresh racing on a page load,
+// or two tabs reloading at the same moment — must share ONE backend /refresh
+// call. Firing two would replay a rotated token, and the backend treats that
+// as theft and revokes ALL of the user's sessions. Waiters adopt the winner's
+// outcome and write the same fresh pair to their own response cookies.
+export function rotateWithLock(refreshToken: string): Promise<RotationOutcome> {
+  let inFlight = inFlightRotations.get(refreshToken);
+
+  if (!inFlight) {
+    inFlight = (async (): Promise<RotationOutcome> => {
+      let refreshed: Response;
+      try {
+        refreshed = await refreshTokens(refreshToken);
+      } catch {
+        return { ok: false, status: 502, message: "Cannot reach the Kue API." };
+      }
+
+      if (!refreshed.ok) {
+        return {
+          ok: false,
+          status: 401,
+          message: "Session expired. Please sign in again.",
+        };
+      }
+
+      const body: Record<string, unknown> | null = await refreshed.json().catch(() => null);
+      const accessToken =
+        body && isNonEmptyString(body.accessToken) ? body.accessToken : null;
+
+      if (!body || !accessToken) {
+        return { ok: false, status: 502, message: "Cannot reach the Kue API." };
+      }
+
+      // A null refreshToken in the response is honored by the callers: the
+      // existing refresh cookie is preserved, only the access token rewrites.
+      return {
+        ok: true,
+        accessToken,
+        refreshToken: isNonEmptyString(body.refreshToken) ? body.refreshToken : null,
+        user: body.user ?? null,
+      };
+    })().finally(() => {
+      inFlightRotations.delete(refreshToken);
+    });
+
+    inFlightRotations.set(refreshToken, inFlight);
   }
 
-  let refreshed: Response;
-  try {
-    refreshed = await refreshTokens(refreshToken);
-  } catch {
-    return { ok: false, status: 502, message: "Cannot reach the Kue API." };
-  }
-
-  if (!refreshed.ok) {
-    clearSession(cookieStore, isSecure);
-    return { ok: false, status: 401, message: "Session expired. Please sign in again." };
-  }
-
-  const body: Record<string, unknown> = await refreshed.json().catch(() => ({}));
-  const nextAccess = isNonEmptyString(body.accessToken) ? body.accessToken : "";
-  const nextRefresh = isNonEmptyString(body.refreshToken) ? body.refreshToken : null;
-
-  if (!nextAccess) {
-    return { ok: false, status: 502, message: "Cannot reach the Kue API." };
-  }
-
-  writeTokens(cookieStore, nextAccess, nextRefresh, isSecure);
-  return { ok: true, accessToken: nextAccess, refreshToken: nextRefresh };
+  return inFlight;
 }

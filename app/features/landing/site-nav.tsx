@@ -68,10 +68,10 @@ export default function SiteNav() {
         </div>
 
         <div className="ml-auto flex items-center gap-2 md:ml-0">
-          <ButtonLink href="/login" variant="secondary" size="sm" className="!px-4 text-[13px]">
+          <ButtonLink href="/login" variant="secondary" size="sm" className="!px-4 text-[13px] w-24">
             Log in
           </ButtonLink>
-          <ButtonLink href="/register" size="sm" className="!px-4 text-[13px]">
+          <ButtonLink href="/register" size="sm" className="!px-4 text-[13px] w-24">
             Register
           </ButtonLink>
           <ThemeToggleButton className="!size-9 !rounded-lg !bg-transparent !text-ink-2 hover:!bg-surface-2 hover:!text-ink" />

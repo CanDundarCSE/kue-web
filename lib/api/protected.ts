@@ -4,7 +4,7 @@ import { API_BASE_URL } from "@/lib/api/backend";
 import { ACCESS_COOKIE, NO_STORE } from "@/lib/api/auth";
 
 type ProtectedInit = {
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: string;
 };
 

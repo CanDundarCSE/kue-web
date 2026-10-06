@@ -85,3 +85,19 @@ export async function GET(request: Request) {
   // The refresh payload carries the user, so no second /api/v1/me call.
   return Response.json(outcome.user, { headers: NO_STORE });
 }
+
+export async function PUT(request: Request) {
+  const { fetchProtected } = await import("@/lib/api/protected");
+  let body: string | undefined;
+  try {
+    body = await request.text();
+  } catch {
+    body = undefined;
+  }
+
+  return fetchProtected("/me", {
+    method: "PUT",
+    body,
+  });
+}
+

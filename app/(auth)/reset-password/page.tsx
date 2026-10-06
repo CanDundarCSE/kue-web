@@ -38,7 +38,7 @@ export default async function ResetPasswordPage({
   const isValidLink = Boolean(email && token);
 
   return (
-    <main className="flex min-h-[calc(100dvh-4rem)] items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+    <main className="flex min-h-dvh items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
       <div className="grid w-full max-w-[820px] overflow-hidden rounded-2xl border border-line bg-background shadow-[var(--shadow)] sm:grid-cols-[1fr_1fr]">
         <div className="flex flex-col justify-between gap-8 p-8 sm:p-10">
           <div>

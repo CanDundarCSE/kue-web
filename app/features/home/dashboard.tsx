@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { Skeleton } from "@/app/components/ui/skeleton";
 import ContinueList from "@/app/features/home/continue-list";
 import FriendsCard from "@/app/features/home/friends-card";
 import SectionLabel from "@/app/features/home/section-label";
@@ -39,19 +40,13 @@ function formatDateLabel(now: number) {
 
 function NameSkeleton() {
   return (
-    <span
-      aria-hidden="true"
-      className="inline-block h-[0.85em] w-28 max-w-[45vw] animate-pulse rounded-md bg-surface-3 align-[-0.08em]"
-    />
+    <Skeleton as="span" className="inline-block h-[0.85em] w-28 max-w-[45vw] align-[-0.08em]" />
   );
 }
 
 function CountSkeleton() {
   return (
-    <span
-      aria-hidden="true"
-      className="inline-block h-3.5 w-16 animate-pulse rounded-md bg-surface-3 align-[-0.15em]"
-    />
+    <Skeleton as="span" className="inline-block h-3.5 w-16 align-[-0.15em]" />
   );
 }
 

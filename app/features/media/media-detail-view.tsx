@@ -30,6 +30,7 @@ import {
   type MediaDto,
 } from "@/lib/api/media";
 import type { LibraryEntryDto } from "@/lib/api/library";
+import { Skeleton } from "@/app/components/ui/skeleton";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 
@@ -99,6 +100,131 @@ function getStatusOptions(mediaType: string): StatusOption[] {
     { key: "on_hold", label: "On hold" },
     { key: "dropped", label: "Dropped" },
   ];
+}
+
+export function MediaDetailSkeleton() {
+  return (
+    <article className="mx-auto w-full max-w-[1080px] px-5 py-6 sm:px-8 sm:py-10">
+      {/* Top Divider */}
+      <div className="h-px w-full bg-line mb-6 sm:mb-8" aria-hidden="true" />
+
+      {/* Banner Skeleton */}
+      <Skeleton className="mb-8 h-44 w-full rounded-2xl sm:h-56 md:h-64 lg:h-72" />
+
+      {/* Header Info Skeleton */}
+      <header className="relative">
+        {/* Meta breadcrumb skeleton */}
+        <div className="flex items-center gap-2">
+          <Skeleton className="size-2 rounded-full" />
+          <Skeleton className="h-3 w-16" />
+          <span className="text-ink-3/40">·</span>
+          <Skeleton className="h-3 w-12" />
+          <span className="text-ink-3/40">·</span>
+          <Skeleton className="h-3 w-24" />
+        </div>
+
+        {/* Title skeleton */}
+        <Skeleton className="mt-4 h-10 w-2/3 max-w-lg sm:h-12" />
+
+        {/* Description lines skeleton */}
+        <div className="mt-4 space-y-2 max-w-2xl">
+          <Skeleton className="h-3.5 w-full" />
+          <Skeleton className="h-3.5 w-5/6" />
+        </div>
+
+        {/* Badges / Pills Row Skeleton */}
+        <div className="mt-6 flex flex-wrap items-center gap-2 sm:gap-2.5">
+          <Skeleton className="h-7 w-28 rounded-full" />
+          <Skeleton className="h-7 w-20 rounded-full" />
+          <Skeleton className="h-7 w-20 rounded-full" />
+          <Skeleton className="h-7 w-24 rounded-full" />
+          <div className="ml-auto flex items-center gap-2">
+            <Skeleton className="h-7 w-20 rounded-full" />
+            <Skeleton className="h-7 w-16 rounded-full" />
+          </div>
+        </div>
+      </header>
+
+      {/* Two-Column Grid Skeleton */}
+      <section className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8 items-start">
+        {/* Left Card: Progress / Tracker */}
+        <div className="rounded-2xl border border-line bg-surface-2 p-6 sm:p-7 shadow-xs">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-3 w-24" />
+            <div className="h-px flex-1 bg-line" aria-hidden="true" />
+          </div>
+
+          <div className="mt-8 flex items-baseline gap-3">
+            <Skeleton className="h-14 w-24" />
+            <Skeleton className="h-6 w-32" />
+          </div>
+
+          <Skeleton className="mt-4 h-1 w-full max-w-[280px] rounded-full" />
+
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Skeleton className="size-9 rounded-lg" />
+              <Skeleton className="h-7 w-16 rounded-lg" />
+              <Skeleton className="size-9 rounded-lg" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-3 w-16" />
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+                  <Skeleton key={i} className="size-2 rounded-full" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Details & Similar */}
+        <div className="space-y-6">
+          {/* Details Card Skeleton */}
+          <div className="rounded-2xl border border-line bg-surface-2 p-6 sm:p-7 shadow-xs">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-3 w-16" />
+              <div className="h-px flex-1 bg-line" aria-hidden="true" />
+            </div>
+
+            <div className="mt-5 divide-y divide-line">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-center justify-between py-3">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-3 w-28" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Similar Titles Card Skeleton */}
+          <div className="rounded-2xl border border-line bg-surface-2 p-6 sm:p-7 shadow-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 flex-1">
+                <Skeleton className="h-3 w-20" />
+                <div className="h-px flex-1 bg-line" aria-hidden="true" />
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-2.5">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-3.5 rounded-xl border border-line/60 bg-surface-2/70 p-2.5 sm:p-3"
+                >
+                  <Skeleton className="h-12 w-9 rounded-md shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-3.5 w-3/4" />
+                    <Skeleton className="h-2.5 w-1/3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    </article>
+  );
 }
 
 export default function MediaDetailView({
@@ -529,20 +655,7 @@ export default function MediaDetailView({
   };
 
   if (loading) {
-    return (
-      <div className="mx-auto w-full max-w-[1080px] px-5 py-12 sm:px-8">
-        <div className="flex items-center gap-3">
-          <div className="size-2 animate-pulse rounded-full bg-surface-3" />
-          <div className="h-3 w-40 animate-pulse rounded-full bg-surface-3" />
-        </div>
-        <div className="mt-4 h-12 w-3/4 animate-pulse rounded-xl bg-surface-3" />
-        <div className="mt-4 h-5 w-1/2 animate-pulse rounded-lg bg-surface-3" />
-        <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-2">
-          <div className="h-80 animate-pulse rounded-2xl bg-surface-2" />
-          <div className="h-80 animate-pulse rounded-2xl bg-surface-2" />
-        </div>
-      </div>
-    );
+    return <MediaDetailSkeleton />;
   }
 
   if (!media) {

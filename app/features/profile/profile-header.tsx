@@ -4,6 +4,7 @@ import { Check, Loader2, Lock, Pencil, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/app/components/ui/button";
+import { Skeleton } from "@/app/components/ui/skeleton";
 import { updateMe } from "@/lib/api/me";
 import { fetchOverview, type StatsOverview } from "@/lib/api/stats";
 import { initialOf } from "@/lib/current-user";
@@ -23,12 +24,34 @@ function StatValue({ label, value }: { label: string; value: number }) {
   );
 }
 
-function StatSkeleton() {
+export function StatSkeleton() {
   return (
     <div aria-hidden="true" className="flex flex-col items-center gap-2">
-      <div className="h-6 w-10 animate-pulse rounded-md bg-surface-3" />
-      <div className="h-2 w-14 animate-pulse rounded-full bg-surface-3" />
+      <Skeleton className="h-6 w-10 rounded-md" />
+      <Skeleton className="h-2 w-14 rounded-full" />
     </div>
+  );
+}
+
+export function ProfileHeaderSkeleton() {
+  return (
+    <article className="rounded-xl border border-line bg-surface-2 p-5 sm:p-6">
+      <div className="flex flex-col items-center gap-6">
+        <div className="flex w-full max-w-md items-center justify-center gap-3 sm:max-w-none">
+          <Skeleton className="size-14 shrink-0 rounded-full sm:size-16" />
+          <Skeleton className="h-7 w-44 max-w-[50vw] rounded-md" />
+        </div>
+        <div
+          aria-hidden="true"
+          className="grid w-full max-w-sm grid-cols-2 gap-x-6 gap-y-5 sm:max-w-none sm:grid-cols-4"
+        >
+          <StatSkeleton />
+          <StatSkeleton />
+          <StatSkeleton />
+          <StatSkeleton />
+        </div>
+      </div>
+    </article>
   );
 }
 
@@ -86,28 +109,7 @@ export default function ProfileHeader() {
   };
 
   if (loading || user === null) {
-    return (
-      <article className="rounded-xl border border-line bg-surface-2 p-5 sm:p-6">
-        <div className="flex flex-col items-center gap-6">
-          <div className="flex w-full max-w-md items-center justify-center gap-3 sm:max-w-none">
-            <div
-              aria-hidden="true"
-              className="size-14 shrink-0 animate-pulse rounded-full bg-surface-3 sm:size-16"
-            />
-            <div className="h-7 w-44 max-w-[50vw] animate-pulse rounded-md bg-surface-3" />
-          </div>
-          <div
-            aria-hidden="true"
-            className="grid w-full max-w-sm grid-cols-2 gap-x-6 gap-y-5 sm:max-w-none sm:grid-cols-4"
-          >
-            <StatSkeleton />
-            <StatSkeleton />
-            <StatSkeleton />
-            <StatSkeleton />
-          </div>
-        </div>
-      </article>
-    );
+    return <ProfileHeaderSkeleton />;
   }
 
   const stats = overview

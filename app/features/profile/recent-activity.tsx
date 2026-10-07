@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import SectionLabel from "@/app/features/home/section-label";
+import { Skeleton } from "@/app/components/ui/skeleton";
 import { authFetch } from "@/lib/api/client";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
@@ -157,16 +158,25 @@ function ActivityRow({
   );
 }
 
-function ActivitySkeleton() {
+export function ActivitySkeleton() {
   return (
     <div aria-hidden="true" className="mt-5">
       {[0, 1, 2, 3, 4].map((index) => (
         <div key={index} className="flex items-center justify-between border-b border-line py-2.5 last:border-0">
-          <div className="h-3 w-20 animate-pulse rounded-full bg-surface-3" />
-          <div className="h-3 w-16 animate-pulse rounded-full bg-surface-3" />
+          <Skeleton className="h-3 w-20 rounded-full" />
+          <Skeleton className="h-3 w-16 rounded-full" />
         </div>
       ))}
     </div>
+  );
+}
+
+export function RecentActivitySkeleton({ className }: { className?: string }) {
+  return (
+    <article className={cn("rounded-xl border border-line bg-surface-2 p-5 sm:p-6", className)}>
+      <SectionLabel>Recent Activity</SectionLabel>
+      <ActivitySkeleton />
+    </article>
   );
 }
 

@@ -6,6 +6,7 @@ import Link from "next/link";
 import MediaLibraryRow, { LIBRARY_GRID_LAYOUT } from "@/app/components/media-library-row";
 import { type MediaType } from "@/app/components/media-avatar-card";
 import LibraryEntrySheet, { type EditableLibraryItem } from "@/app/features/library/library-entry-sheet";
+import { Skeleton } from "@/app/components/ui/skeleton";
 import { authFetch } from "@/lib/api/client";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
@@ -105,26 +106,82 @@ type StatsOverviewResponse = {
   game?: { total: number };
 };
 
-function RowSkeleton() {
+export function RowSkeleton() {
   return (
     <div className={cn("w-full border-b border-zinc-200 py-3.5 dark:border-zinc-800/80", LIBRARY_GRID_LAYOUT)}>
       <div className="flex items-center gap-3.5">
-        <div className="h-[54px] w-[42px] shrink-0 animate-pulse rounded-lg bg-zinc-200 dark:bg-zinc-800" />
+        <Skeleton className="h-[54px] w-[42px] shrink-0 rounded-lg" />
         <div className="min-w-0 flex-1 space-y-2">
-          <div className="h-4 w-3/4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-          <div className="h-3 w-1/3 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-3 w-1/3" />
         </div>
       </div>
       <div className="hidden lg:block">
-        <div className="h-3 w-20 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+        <Skeleton className="h-3 w-20" />
       </div>
       <div className="hidden lg:block">
-        <div className="h-3 w-24 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+        <Skeleton className="h-3 w-24" />
       </div>
       <div className="flex justify-center">
-        <div className="h-6 w-16 animate-pulse rounded-full bg-zinc-200 dark:bg-zinc-800" />
+        <Skeleton className="h-6 w-16 rounded-full" />
       </div>
       <div />
+    </div>
+  );
+}
+
+export function LibrarySkeleton() {
+  return (
+    <div className="mx-auto w-full max-w-[1160px] px-5 py-8 sm:px-8 sm:py-10">
+      {/* Header Section Skeleton */}
+      <header className="mb-8">
+        <Skeleton className="h-3 w-16 rounded-sm" />
+        <Skeleton className="mt-3 h-10 w-80 max-w-[80vw] sm:h-12" />
+        <Skeleton className="mt-3 h-4 w-44" />
+      </header>
+
+      {/* Media Type Tabs Skeleton */}
+      <div className="flex border-b border-zinc-200 dark:border-zinc-800 gap-6 sm:gap-8 pb-3">
+        {["ALL", "FILM", "SERIES", "GAME", "ANIME", "MANGA"].map((tab) => (
+          <div key={tab} className="flex items-center gap-1.5">
+            <Skeleton className="h-3 w-12" />
+            <Skeleton className="h-3 w-4" />
+          </div>
+        ))}
+      </div>
+
+      {/* Filter and Sort Row Skeleton */}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-2">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Skeleton key={i} className="h-7 w-20 rounded-full" />
+          ))}
+        </div>
+        <Skeleton className="h-8 w-36 rounded-lg" />
+      </div>
+
+      {/* Table Container Skeleton */}
+      <div className="mt-6 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800/80 dark:bg-zinc-950/40">
+        <div
+          className={cn(
+            "border-b border-zinc-200 bg-[#fafaf8] py-3 font-mono text-[10px] tracking-[0.16em] uppercase text-zinc-400 dark:border-zinc-800/80 dark:bg-transparent dark:text-zinc-500",
+            LIBRARY_GRID_LAYOUT,
+          )}
+        >
+          <div>TITLE</div>
+          <div className="hidden lg:block">STATUS</div>
+          <div className="hidden lg:block">PROGRESS</div>
+          <div className="text-center">RATING</div>
+          <div />
+        </div>
+        <div className="divide-y divide-zinc-200 dark:divide-zinc-800/60">
+          <RowSkeleton />
+          <RowSkeleton />
+          <RowSkeleton />
+          <RowSkeleton />
+          <RowSkeleton />
+        </div>
+      </div>
     </div>
   );
 }
@@ -360,8 +417,12 @@ export default function LibraryView() {
     return Math.max(1, counts.filter((c) => c > 0).length);
   }, [tabCounts]);
 
+  if (authLoading) {
+    return <LibrarySkeleton />;
+  }
+
   // If signed out, display clean prompt to sign in
-  if (!authLoading && user === null) {
+  if (user === null) {
     return (
       <div className="mx-auto flex w-full max-w-[1160px] flex-col items-center px-5 py-24 text-center sm:px-8">
         <span className="text-[10px] font-mono tracking-[0.2em] text-zinc-400 dark:text-zinc-500 uppercase">

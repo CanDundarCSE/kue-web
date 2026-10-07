@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import SectionLabel from "@/app/features/home/section-label";
+import { Skeleton } from "@/app/components/ui/skeleton";
 import { authFetch } from "@/lib/api/client";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
@@ -50,14 +51,14 @@ function FriendsEmptyState() {
   );
 }
 
-function FriendsSkeleton() {
+export function FriendsSkeleton() {
   return (
     <ul aria-hidden="true" className="mt-4 flex flex-1 flex-col">
       {[0, 1, 2, 3].map((index) => (
         <li key={index} className="flex items-center gap-3 border-b border-line/60 py-3 last:border-b-0">
-          <div className="size-8 shrink-0 animate-pulse rounded-full bg-surface-3" />
-          <div className="h-3 w-3/4 animate-pulse rounded-full bg-surface-3" />
-          <div className="h-2.5 w-6 animate-pulse rounded-full bg-surface-3" />
+          <Skeleton className="size-8 shrink-0 rounded-full" />
+          <Skeleton className="h-3 w-3/4 rounded-full" />
+          <Skeleton className="h-2.5 w-6 rounded-full" />
         </li>
       ))}
     </ul>

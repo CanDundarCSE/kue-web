@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import SectionLabel from "@/app/features/home/section-label";
+import { Skeleton } from "@/app/components/ui/skeleton";
 import { authFetch } from "@/lib/api/client";
 import { fetchOverview } from "@/lib/api/stats";
 import { useCurrentUser } from "@/lib/use-current-user";
@@ -100,22 +101,22 @@ function WeekEmptyState() {
   );
 }
 
-function WeekSkeleton() {
+export function WeekSkeleton() {
   return (
     <>
       <div aria-hidden="true" className="mt-8 flex items-end gap-2.5 sm:gap-3">
         {DAY_LETTERS.map((letter, index) => (
           <div key={`${letter}-${index}`} className="flex flex-1 flex-col items-center gap-2">
-            <div className="h-4 w-full max-w-[30px] animate-pulse rounded-full bg-surface-3" />
-            <span className="h-1.5 w-2 animate-pulse rounded-full bg-surface-3" />
+            <Skeleton className="h-4 w-full max-w-[30px] rounded-full" />
+            <Skeleton className="h-1.5 w-2 rounded-full" />
           </div>
         ))}
       </div>
       <div aria-hidden="true" className="mt-6 grid grid-cols-3 gap-4 border-t border-line pt-5">
         {[0, 1, 2].map((index) => (
           <div key={index}>
-            <div className="h-7 w-10 animate-pulse rounded-md bg-surface-3" />
-            <div className="mt-3 h-1.5 w-14 animate-pulse rounded-full bg-surface-3" />
+            <Skeleton className="h-7 w-10 rounded-md" />
+            <Skeleton className="mt-3 h-1.5 w-14 rounded-full" />
           </div>
         ))}
       </div>

@@ -4,6 +4,7 @@ import { Heart } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
+import { Skeleton } from "@/app/components/ui/skeleton";
 import { authFetch } from "@/lib/api/client";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
@@ -94,11 +95,21 @@ function CardCell({
   );
 }
 
-function CellSkeleton() {
+export function CellSkeleton() {
   return (
     <div aria-hidden="true" className="flex flex-col items-center gap-2">
-      <div className="aspect-[42/54] w-full animate-pulse rounded-lg bg-surface-3" />
-      <div className="h-2.5 w-3/4 animate-pulse rounded-full bg-surface-3" />
+      <Skeleton className="aspect-[42/54] w-full rounded-lg" />
+      <Skeleton className="h-2.5 w-3/4 rounded-full" />
+    </div>
+  );
+}
+
+export function FavoritesSkeleton() {
+  return (
+    <div aria-hidden="true" className="grid grid-cols-3 gap-3 sm:grid-cols-6 sm:gap-4">
+      {([0, 1, 2, 3, 4, 5] as const).map((index) => (
+        <CellSkeleton key={index} />
+      ))}
     </div>
   );
 }

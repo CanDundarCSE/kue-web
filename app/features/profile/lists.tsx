@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 
 import Button from "@/app/components/button";
+import { Skeleton } from "@/app/components/ui/skeleton";
 import { authFetch, readApiError } from "@/lib/api/client";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
@@ -99,21 +100,30 @@ function ListCard({ list }: { list: CustomList }) {
   );
 }
 
-function ListCardSkeleton() {
+export function ListCardSkeleton() {
   return (
     <div aria-hidden="true" className="rounded-xl border border-line bg-surface-2 p-4">
       <div className="flex items-start justify-between gap-2">
-        <div className="h-4 w-32 animate-pulse rounded-md bg-surface-3" />
-        <div className="h-4 w-14 animate-pulse rounded-full bg-surface-3" />
+        <Skeleton className="h-4 w-32 rounded-md" />
+        <Skeleton className="h-4 w-14 rounded-full" />
       </div>
-      <div className="mt-3 h-3 w-4/5 animate-pulse rounded-full bg-surface-3" />
+      <Skeleton className="mt-3 h-3 w-4/5 rounded-full" />
       <div className="mt-4 flex items-center justify-between">
         <div className="flex gap-1.5">
-          <div className="size-8 animate-pulse rounded-md bg-surface-3" />
-          <div className="size-8 animate-pulse rounded-md bg-surface-3" />
+          <Skeleton className="size-8 rounded-md" />
+          <Skeleton className="size-8 rounded-md" />
         </div>
-        <div className="h-3 w-14 animate-pulse rounded-full bg-surface-3" />
+        <Skeleton className="h-3 w-14 rounded-full" />
       </div>
+    </div>
+  );
+}
+
+export function ListsSkeleton() {
+  return (
+    <div aria-hidden="true" className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <ListCardSkeleton />
+      <ListCardSkeleton />
     </div>
   );
 }

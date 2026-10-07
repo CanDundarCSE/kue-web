@@ -4,6 +4,7 @@ import { Minus, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
+import { Skeleton } from "@/app/components/ui/skeleton";
 import { authFetch } from "@/lib/api/client";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
@@ -154,19 +155,19 @@ function StepButton({
   );
 }
 
-function CardSkeleton() {
+export function CardSkeleton() {
   return (
     <div aria-hidden="true" className="rounded-xl border border-line bg-surface-2 p-4">
       <div className="flex items-start gap-3">
-        <div className="h-[54px] w-[42px] shrink-0 animate-pulse rounded-lg bg-surface-3" />
+        <Skeleton className="h-[54px] w-[42px] shrink-0 rounded-lg" />
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="h-2 w-16 animate-pulse rounded-full bg-surface-3" />
-          <div className="mt-3 h-3.5 w-4/5 animate-pulse rounded-full bg-surface-3" />
+          <Skeleton className="h-2 w-16 rounded-full" />
+          <Skeleton className="mt-3 h-3.5 w-4/5 rounded-full" />
           <div className="mt-auto pt-5">
-            <div className="h-[3px] w-full animate-pulse rounded-full bg-surface-3" />
+            <Skeleton className="h-[3px] w-full rounded-full" />
             <div className="mt-3 flex items-center justify-between">
-              <div className="h-2.5 w-20 animate-pulse rounded-full bg-surface-3" />
-              <div className="h-7 w-14 animate-pulse rounded-md bg-surface-3" />
+              <Skeleton className="h-2.5 w-20 rounded-full" />
+              <Skeleton className="h-7 w-14 rounded-md" />
             </div>
           </div>
         </div>

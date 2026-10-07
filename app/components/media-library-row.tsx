@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Heart } from "lucide-react";
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
 import RatingBadge from "@/app/components/rating-badge";
 import StatusBadge, { type MediaStatus } from "@/app/components/status-badge";
@@ -91,6 +91,7 @@ export default function MediaLibraryRow({
   status,
   progress,
   rating,
+  isFavorite,
   onClick,
   className,
 }: {
@@ -102,6 +103,7 @@ export default function MediaLibraryRow({
   status: MediaStatus | string;
   progress?: MediaProgressData;
   rating?: number;
+  isFavorite?: boolean;
   onClick?: () => void;
   className?: string;
 }) {
@@ -131,9 +133,17 @@ export default function MediaLibraryRow({
         />
 
         <div className="min-w-0 flex-1 pr-2">
-          <p className="truncate text-[14px] font-semibold text-zinc-900 group-hover:text-black transition-colors dark:text-zinc-100 dark:group-hover:text-white">
-            {title}
-          </p>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <p className="truncate text-[14px] font-semibold text-zinc-900 group-hover:text-black transition-colors dark:text-zinc-100 dark:group-hover:text-white">
+              {title}
+            </p>
+            {isFavorite && (
+              <Heart
+                className="size-3 shrink-0 fill-rose-500 text-rose-500"
+                aria-label="Favorite"
+              />
+            )}
+          </div>
 
           {(year !== undefined || studio) && (
             <p className="mt-1 truncate text-[11px] font-mono tracking-[0.06em] text-zinc-400 dark:text-zinc-500 uppercase">

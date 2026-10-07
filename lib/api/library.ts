@@ -73,3 +73,10 @@ export function updateProgress(mediaId: number, progress: number): Promise<Respo
     body: JSON.stringify({ progress }),
   });
 }
+
+export function updateLibraryEntry(mediaId: number, params: UpdateLibraryParams): Promise<Response> {
+  return fetchProtected(`/me/library/${mediaId}`, {
+    method: "PUT",
+    body: JSON.stringify(params),
+  });
+}

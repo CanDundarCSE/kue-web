@@ -103,12 +103,26 @@ export async function fetchMediaLibraryEntry(mediaId: number): Promise<LibraryEn
 export async function saveMediaLibraryStatus(
   mediaId: number,
   status: string,
-  extra?: { progress?: number; rating?: number },
+  extra?: { progress?: number; rating?: number; isFavorite?: boolean },
 ): Promise<LibraryEntryDto | null> {
   const response = await authFetch(`/api/library/${mediaId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ status, ...extra }),
+  }).catch(() => null);
+
+  if (!response || !response.ok) return null;
+  return (await response.json().catch(() => null)) as LibraryEntryDto | null;
+}
+
+export async function setMediaFavorite(
+  mediaId: number,
+  isFavorite: boolean,
+): Promise<LibraryEntryDto | null> {
+  const response = await authFetch(`/api/library/${mediaId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ isFavorite }),
   }).catch(() => null);
 
   if (!response || !response.ok) return null;
@@ -151,6 +165,7 @@ export async function addMediaToLibrary(payload: {
   runtimeMinutes?: number | null;
   progress?: number;
   rating?: number;
+  isFavorite?: boolean;
 }): Promise<LibraryEntryDto | null> {
   const response = await authFetch("/api/library", {
     method: "POST",

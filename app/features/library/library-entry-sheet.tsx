@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Minus, Plus, Trash2 } from "lucide-react";
+import { Heart, Loader2, Minus, Plus, Trash2 } from "lucide-react";
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
 import RatingBadge from "@/app/components/rating-badge";
 import Button from "@/app/components/button";
@@ -26,6 +26,7 @@ export type EditableLibraryItem = {
   total?: number;
   unit: string;
   rating?: number | null;
+  isFavorite?: boolean;
 };
 
 export default function LibraryEntrySheet({
@@ -50,7 +51,7 @@ export default function LibraryEntrySheet({
         className="w-full sm:max-w-md overflow-y-auto p-6 bg-white text-zinc-900 border-zinc-200 dark:bg-zinc-950 dark:text-zinc-100 dark:border-zinc-800"
       >
         <SheetForm
-          key={`${item.mediaId}-${item.status}-${item.current}-${item.rating}`}
+          key={`${item.mediaId}-${item.status}-${item.current}-${item.rating}-${item.isFavorite}`}
           item={item}
           onSave={async (updated) => {
             await onSave(updated);
@@ -82,10 +83,11 @@ function SheetForm({
   const [status, setStatus] = useState(item.status);
   const [current, setCurrent] = useState(item.current);
   const [rating, setRating] = useState<number | null>(item.rating ?? null);
+  const [isFavorite, setIsFavorite] = useState(item.isFavorite ?? false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const isEpisodic = item.type === "anime" || item.type === "series" || item.type === "manga" || item.type === "game";
+  const isEpisodic = item.type === "anime" || item.type === "series" || item.type === "manga";
 
   const handleSave = async () => {
     setSaving(true);
@@ -95,6 +97,7 @@ function SheetForm({
         status,
         current,
         rating,
+        isFavorite,
       });
     } finally {
       setSaving(false);
@@ -126,7 +129,7 @@ function SheetForm({
 
   return (
     <div className="flex flex-col gap-6">
-      <SheetHeader className="text-left space-y-1">
+      <SheetHeader className="text-left space-y-1 pr-8">
         <div className="flex items-start gap-4">
           <MediaAvatarCard
             title={item.title}
@@ -178,6 +181,45 @@ function SheetForm({
             );
           })}
         </div>
+      </div>
+
+      {/* Favorite Toggle Card */}
+      <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50/70 p-3.5 transition-colors dark:border-zinc-800 dark:bg-zinc-900/40">
+        <div className="flex items-center gap-3">
+          <div
+            className={cn(
+              "grid size-8 place-items-center rounded-lg transition-colors",
+              isFavorite
+                ? "bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400"
+                : "bg-zinc-200/60 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500",
+            )}
+          >
+            <Heart className={cn("size-4", isFavorite && "fill-rose-500 text-rose-500")} />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-zinc-900 dark:text-zinc-100">Favorite</p>
+            <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+              Showcase this title on your profile page
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isFavorite}
+          onClick={() => setIsFavorite((prev) => !prev)}
+          className={cn(
+            "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2 dark:focus-visible:ring-zinc-100",
+            isFavorite ? "bg-rose-500" : "bg-zinc-200 dark:bg-zinc-700",
+          )}
+        >
+          <span
+            className={cn(
+              "pointer-events-none inline-block size-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
+              isFavorite ? "translate-x-5" : "translate-x-0",
+            )}
+          />
+        </button>
       </div>
 
       {/* Progress Counter */}

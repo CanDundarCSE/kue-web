@@ -90,6 +90,7 @@ function mapDtoToEditable(dto: LibraryEntryDto): EditableLibraryItem {
     total,
     unit,
     rating: dto.rating ?? dto.media?.score ?? null,
+    isFavorite: dto.isFavorite ?? false,
   };
 }
 
@@ -319,6 +320,7 @@ export default function LibraryView() {
           status: updated.status,
           progress: updated.current,
           rating: updated.rating,
+          isFavorite: updated.isFavorite,
         }),
       });
       void refreshStats();
@@ -545,6 +547,7 @@ export default function LibraryView() {
                   type={item.type}
                   status={item.status}
                   rating={item.rating ?? undefined}
+                  isFavorite={item.isFavorite}
                   progress={
                     item.type === "movie"
                       ? { current: 1, total: 1, unit: "film", isCompleted }

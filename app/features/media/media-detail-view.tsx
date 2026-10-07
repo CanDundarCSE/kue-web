@@ -23,6 +23,7 @@ import {
   fetchSimilarMedia,
   fetchMediaLibraryEntry,
   saveMediaLibraryStatus,
+  setMediaFavorite,
   setMediaProgress,
   setMediaRating,
   addMediaToLibrary,
@@ -348,6 +349,51 @@ export default function MediaDetailView({
     }
   };
 
+  const handleFavoriteToggle = async () => {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    if (!media || updating) return;
+
+    const nextFavorite = !entry?.isFavorite;
+
+    setUpdating(true);
+    try {
+      if (entry && media.id > 0) {
+        const updated = await setMediaFavorite(media.id, nextFavorite);
+        if (updated) {
+          setEntry(updated);
+        } else {
+          setEntry((prev) => (prev ? { ...prev, isFavorite: nextFavorite } : null));
+        }
+      } else {
+        const created = await addMediaToLibrary({
+          mediaId: media.id > 0 ? media.id : undefined,
+          mediaType: media.mediaType,
+          externalSource: media.externalSource,
+          externalId: media.externalId,
+          status: "planning",
+          title: media.title,
+          coverImage: media.coverImage,
+          year: media.year,
+          score: media.score,
+          totalUnits: media.totalUnits,
+          unitName: media.unitName,
+          runtimeMinutes: media.runtimeMinutes,
+          isFavorite: nextFavorite,
+        });
+        if (created) {
+          setEntry(created);
+          setMedia((prev) => (prev ? { ...prev, id: created.mediaId } : null));
+          window.history.replaceState(null, "", `/media/${created.mediaId}`);
+        }
+      }
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const handleShare = () => {
     if (typeof window !== "undefined") {
       void navigator.clipboard?.writeText(window.location.href);
@@ -523,12 +569,34 @@ export default function MediaDetailView({
             {media.externalSource || "Anilist"}
           </span>
 
+          {/* Favorite button */}
+          <button
+            type="button"
+            onClick={handleFavoriteToggle}
+            aria-label={entry?.isFavorite ? "Remove from favorites" : "Add to favorites"}
+            title={entry?.isFavorite ? "Remove from favorites" : "Add to favorites"}
+            className={cn(
+              "ml-auto inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-[10.5px] tracking-wider uppercase transition-colors",
+              entry?.isFavorite
+                ? "border-rose-500/40 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 dark:border-rose-500/30"
+                : "border-line text-ink-3 hover:text-foreground hover:bg-surface-3",
+            )}
+          >
+            <Heart
+              className={cn(
+                "size-3 transition-transform",
+                entry?.isFavorite && "fill-rose-500 text-rose-500 scale-110",
+              )}
+            />
+            {entry?.isFavorite ? "Favorited" : "Favorite"}
+          </button>
+
           {/* Share button */}
           <button
             type="button"
             onClick={handleShare}
             aria-label="Share title"
-            className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1 font-mono text-[10.5px] tracking-wider text-ink-3 uppercase hover:text-foreground hover:bg-surface-3 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1 font-mono text-[10.5px] tracking-wider text-ink-3 uppercase hover:text-foreground hover:bg-surface-3 transition-colors"
           >
             {copied ? (
               <>

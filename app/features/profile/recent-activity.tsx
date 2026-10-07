@@ -22,9 +22,16 @@ const MAX_ROWS = 14;
 
 // "yyyy-MM-dd" parsed as local components, so the label never shifts a day
 // across time zones the way new Date("...") (UTC midnight) would.
-function parseDayKey(key: string): Date {
-  const [year, month, day] = key.split("-").map(Number);
-  return new Date(year, (month ?? 1) - 1, day ?? 1);
+function parseDayKey(key: string): Date | null {
+  if (!key) return null;
+  const parts = key.split("-").map(Number);
+  if (parts.length === 3 && parts.every((n) => !Number.isNaN(n))) {
+    const [year, month, day] = parts;
+    const date = new Date(year, month - 1, day);
+    if (!Number.isNaN(date.getTime())) return date;
+  }
+  const fallback = new Date(key);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
 }
 
 function dayKeyOf(date: Date) {
@@ -36,12 +43,29 @@ function dayKeyOf(date: Date) {
 function dateLabel(key: string, todayKey: string, yesterdayKey: string): string {
   if (key === todayKey) return "Today";
   if (key === yesterdayKey) return "Yesterday";
-  return parseDayKey(key).toLocaleDateString("en-US", {
+  const date = parseDayKey(key);
+  if (!date) return key;
+  return date.toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
   });
 }
+
+type ActivityApiResponse = {
+  dailySummaries?: Array<{
+    date: string;
+    added: number;
+    completed: number;
+    total?: number;
+  }>;
+  items?: Array<{
+    date?: string;
+    createdAt?: string;
+    added?: number;
+    completed?: number;
+  }>;
+};
 
 async function fetchRecentActivity(): Promise<ActivityData> {
   const response = await authFetch(
@@ -50,9 +74,46 @@ async function fetchRecentActivity(): Promise<ActivityData> {
   );
   if (!response.ok) throw new Error("load failed");
 
-  const data = (await response.json()) as { items?: ActivityDay[] };
-  const items = Array.isArray(data.items) ? data.items : [];
-  return { days: items };
+  const data = (await response.json()) as ActivityApiResponse;
+
+  // The backend returns daily summaries aggregated per date (yyyy-MM-dd)
+  if (Array.isArray(data.dailySummaries)) {
+    return {
+      days: data.dailySummaries.map((item) => ({
+        date: item.date,
+        added: item.added ?? 0,
+        completed: item.completed ?? 0,
+      })),
+    };
+  }
+
+  // Fallback to aggregating items if dailySummaries is absent
+  const rawItems = Array.isArray(data.items) ? data.items : [];
+  const map = new Map<string, { added: number; completed: number }>();
+
+  for (const item of rawItems) {
+    let key = item.date ?? "";
+    if (item.createdAt) {
+      const d = new Date(item.createdAt);
+      if (!Number.isNaN(d.getTime())) {
+        key = dayKeyOf(d);
+      }
+    }
+    if (!key) continue;
+
+    const current = map.get(key) ?? { added: 0, completed: 0 };
+    current.added += item.added ?? 0;
+    current.completed += item.completed ?? 0;
+    map.set(key, current);
+  }
+
+  const days: ActivityDay[] = Array.from(map.entries()).map(([date, counts]) => ({
+    date,
+    added: counts.added,
+    completed: counts.completed,
+  }));
+
+  return { days };
 }
 
 // Single-flight, mirroring the continue-list pattern: concurrent mounts reuse
@@ -203,9 +264,9 @@ export default function RecentActivity({ className }: { className?: string }) {
       ) : (
         <>
           <ul className="mt-2">
-            {visible.map((day) => (
+            {visible.map((day, index) => (
               <ActivityRow
-                key={day.date}
+                key={`${day.date}-${index}`}
                 label={dateLabel(day.date, todayKey, yesterdayKey)}
                 added={day.added}
                 completed={day.completed}

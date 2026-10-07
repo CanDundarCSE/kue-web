@@ -44,7 +44,8 @@ async function loadWeekData(now: number): Promise<WeekData> {
 
   const timeSpent = (await timeResponse.json()) as { totalHours?: number };
   const activity = (await activityResponse.json()) as {
-    items?: { date: string; added: number; completed: number }[];
+    dailySummaries?: { date: string; added: number; completed: number; createdAt?: string }[];
+    items?: { date: string; added?: number; completed?: number; createdAt?: string }[];
   };
 
   // Monday of the current week, so the bars always read M T W T F S S.
@@ -58,9 +59,21 @@ async function loadWeekData(now: number): Promise<WeekData> {
     return { label, date: dateKey(date), value: 0 };
   });
 
-  for (const item of activity.items ?? []) {
-    const day = days.find((candidate) => candidate.date === item.date);
-    if (day) day.value += item.added + item.completed;
+  const summaryItems =
+    Array.isArray(activity.dailySummaries) && activity.dailySummaries.length > 0
+      ? activity.dailySummaries
+      : (activity.items ?? []);
+
+  for (const item of summaryItems) {
+    let itemDate = item.date;
+    if (item.createdAt && (!itemDate || !itemDate.includes("-"))) {
+      const d = new Date(item.createdAt);
+      if (!Number.isNaN(d.getTime())) {
+        itemDate = dateKey(d);
+      }
+    }
+    const day = days.find((candidate) => candidate.date === itemDate);
+    if (day) day.value += (item.added ?? 0) + (item.completed ?? 0);
   }
 
   return {

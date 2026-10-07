@@ -141,6 +141,9 @@ export default function MediaDetailView({
         ]);
         mediaData = fetchedMedia;
         similarData = fetchedSimilar;
+        if (similarData.length === 0 && mediaData) {
+          similarData = await fetchSimilarMedia(null, mediaData.mediaType, mediaData.genres?.[0]);
+        }
       } else if (externalParams?.source && externalParams?.id && externalParams?.type) {
         mediaData = await fetchExternalMedia(
           externalParams.source,
@@ -150,10 +153,19 @@ export default function MediaDetailView({
         if (mediaData) {
           if (mediaData.id > 0) {
             similarData = await fetchSimilarMedia(mediaData.id);
-          } else {
+          }
+          if (similarData.length === 0) {
             similarData = await fetchSimilarMedia(null, mediaData.mediaType, mediaData.genres?.[0]);
           }
         }
+      }
+
+      if (mediaData && similarData.length > 0) {
+        similarData = similarData.filter(
+          (s) =>
+            (s.id <= 0 || s.id !== mediaData.id) &&
+            (!mediaData.externalId || s.externalId !== mediaData.externalId),
+        );
       }
 
       if (cancelled) return;

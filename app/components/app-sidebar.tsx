@@ -15,7 +15,11 @@ import {
 } from "lucide-react";
 
 import Button from "@/app/components/button";
-import { SheetClose, SheetDescription, SheetTitle } from "@/app/components/ui/sheet";
+import {
+  SheetClose,
+  SheetDescription,
+  SheetTitle,
+} from "@/app/components/ui/sheet";
 import LogoMark from "@/app/features/landing/logo-mark";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +32,7 @@ export type AppSidebarItem = {
 
 export const DEFAULT_ITEMS: AppSidebarItem[] = [
   { href: "/home", label: "Home", icon: House },
-  { href: "/library", label: "Library", icon: ChartColumn, count: 8 },
+  { href: "/library", label: "Library", icon: ChartColumn },
   { href: "/discover", label: "Discover", icon: Compass },
   { href: "/stats", label: "Stats", icon: TrendingUp },
   { href: "/profile", label: "Profile", icon: User },
@@ -80,7 +84,13 @@ function NavRow({
 // Icon-only row used by the collapsed desktop rail. Labels aren't visible, so
 // each one carries a native tooltip (`title`) + `aria-label`, and any badge
 // count shows as a small dot since there's no room for the number.
-function CollapsedNavRow({ item, active }: { item: AppSidebarItem; active: boolean }) {
+function CollapsedNavRow({
+  item,
+  active,
+}: {
+  item: AppSidebarItem;
+  active: boolean;
+}) {
   const Icon = item.icon;
 
   return (
@@ -144,9 +154,13 @@ export default function AppSidebar({
             <LogoMark />
             {inSheet ? (
               // pr-10 keeps the title clear of the sheet's own close (X) button.
-              <SheetTitle className="pr-10 text-[16px] tracking-[-0.01em]">Kue</SheetTitle>
+              <SheetTitle className="pr-10 text-[16px] tracking-[-0.01em]">
+                Kue
+              </SheetTitle>
             ) : (
-              <span className="text-[16px] font-semibold tracking-[-0.01em]">Kue</span>
+              <span className="text-[16px] font-semibold tracking-[-0.01em]">
+                Kue
+              </span>
             )}
           </>
         )}
@@ -156,7 +170,9 @@ export default function AppSidebar({
             {items.map((item) => item.label).join(", ")}
           </SheetDescription>
         ) : !collapsed ? (
-          <p className="sr-only">{items.map((item) => item.label).join(", ")}</p>
+          <p className="sr-only">
+            {items.map((item) => item.label).join(", ")}
+          </p>
         ) : null}
 
         {/* When open the toggle sits at the right edge of the header; when
@@ -173,7 +189,9 @@ export default function AppSidebar({
               "hover:bg-surface-2 hover:text-foreground",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
               !collapsed && "ml-auto",
-            ].filter(Boolean).join(" ")}
+            ]
+              .filter(Boolean)
+              .join(" ")}
           >
             <ToggleIcon className="size-5" strokeWidth={1.75} />
           </button>
@@ -181,7 +199,10 @@ export default function AppSidebar({
       </div>
 
       {collapsed ? (
-        <nav aria-label="Primary" className="flex flex-col items-center gap-1 px-2 pt-3">
+        <nav
+          aria-label="Primary"
+          className="flex flex-col items-center gap-1 px-2 pt-3"
+        >
           {items.map((item) => (
             <CollapsedNavRow
               key={item.label}
@@ -192,7 +213,10 @@ export default function AppSidebar({
         </nav>
       ) : (
         <>
-          <nav aria-label="Primary" className="flex shrink-0 flex-col gap-0.5 px-3">
+          <nav
+            aria-label="Primary"
+            className="flex shrink-0 flex-col gap-0.5 px-3"
+          >
             {items.map((item) => (
               <NavRow
                 key={item.label}

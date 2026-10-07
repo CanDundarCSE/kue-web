@@ -1,16 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
   Check,
-  ExternalLink,
   Gamepad2,
   Heart,
-  Loader2,
   Minus,
   Plus,
   RefreshCw,
@@ -59,13 +57,6 @@ const MEDIA_DOT_COLOR: Record<MediaType, string> = {
 function getMediaDotColorClass(type: string): string {
   const normalized = asMediaType(type);
   return MEDIA_DOT_COLOR[normalized];
-}
-
-function getInitials(title: string): string {
-  const words = title.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return "M";
-  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-  return (words[0][0] + words[1][0]).toUpperCase();
 }
 
 type StatusOption = {
@@ -125,6 +116,7 @@ export default function MediaDetailView({
   const [similarIndex, setSimilarIndex] = useState(0);
   const [entry, setEntry] = useState<LibraryEntryDto | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
+  const [hoursInput, setHoursInput] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -384,6 +376,57 @@ export default function MediaDetailView({
     }
   };
 
+  const handleSetHours = async (hours: number) => {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    if (!media || updating) return;
+
+    const nextHours = Math.max(0, hours);
+
+    setUpdating(true);
+    try {
+      if (!entry || media.id <= 0) {
+        const created = await addMediaToLibrary({
+          mediaId: media.id > 0 ? media.id : undefined,
+          mediaType: media.mediaType,
+          externalSource: media.externalSource,
+          externalId: media.externalId,
+          status: "in_progress",
+          title: media.title,
+          coverImage: media.coverImage,
+          year: media.year,
+          score: media.score,
+          totalUnits: media.totalUnits,
+          unitName: media.unitName,
+          runtimeMinutes: media.runtimeMinutes,
+          platforms: media.platforms,
+          platform: currentPlatform,
+          progress: nextHours,
+        });
+        if (created) {
+          setEntry(created);
+          setMedia((prev) => (prev ? { ...prev, id: created.mediaId } : null));
+          window.history.replaceState(null, "", `/media/${created.mediaId}`);
+        }
+      } else {
+        await setMediaProgress(media.id, nextHours);
+        setEntry((prev) =>
+          prev
+            ? {
+                ...prev,
+                progress: nextHours,
+                status: prev.status === "planning" && nextHours > 0 ? "in_progress" : prev.status,
+              }
+            : null,
+        );
+      }
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const handleRatingClick = async (score: number) => {
     if (!user) {
       router.push("/login");
@@ -534,6 +577,7 @@ export default function MediaDetailView({
         ? "Not played"
         : "Not in library";
   const currentProgress = entry?.progress ?? 0;
+  const displayedHours = hoursInput ?? String(currentProgress);
   const totalUnits = media.totalUnits;
   const unitLabel = (media.unitName || (media.mediaType === "manga" ? "ch" : "ep")).toLowerCase();
   const percentage =
@@ -816,9 +860,138 @@ export default function MediaDetailView({
                 </div>
               </div>
             </>
+          ) : isGame ? (
+            <>
+              {/* Game: Hours Played Tracking */}
+              <div className="mt-8 flex items-baseline justify-between gap-4">
+                <div className="flex items-baseline gap-2.5">
+                  <span className="font-serif text-[48px] sm:text-[56px] leading-none tracking-tight text-foreground">
+                    {entry?.progress ?? 0}
+                  </span>
+                  <span className="font-serif text-[22px] sm:text-[26px] tracking-normal text-ink-3 italic">
+                    hours played
+                  </span>
+                </div>
+                {currentStatus && (
+                  <span className="font-mono text-[11px] tracking-wider text-accent uppercase font-medium">
+                    {statusDisplayTitle}
+                  </span>
+                )}
+              </div>
+
+              {/* Stepper + Direct Input Row */}
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = Math.max(0, (entry?.progress ?? 0) - 1);
+                      setHoursInput(null);
+                      void handleSetHours(next);
+                    }}
+                    disabled={updating || (entry?.progress ?? 0) <= 0}
+                    aria-label="Decrease hours"
+                    className="grid size-9 place-items-center rounded-lg border border-line-2/70 text-ink-2 transition-colors hover:bg-surface-3 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 disabled:opacity-30 disabled:pointer-events-none"
+                  >
+                    <Minus className="size-3.5" strokeWidth={2.2} />
+                  </button>
+
+                  <div className="flex items-center gap-1.5 rounded-lg border border-line-2/70 bg-surface-3/30 px-3 py-1.5 focus-within:border-accent">
+                    <input
+                      type="number"
+                      min={0}
+                      value={displayedHours}
+                      onChange={(e) => setHoursInput(e.target.value)}
+                      onBlur={() => {
+                        const val = Math.max(0, parseInt(displayedHours, 10) || 0);
+                        setHoursInput(null);
+                        if (val !== (entry?.progress ?? 0)) {
+                          void handleSetHours(val);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const val = Math.max(0, parseInt(displayedHours, 10) || 0);
+                          setHoursInput(null);
+                          if (val !== (entry?.progress ?? 0)) {
+                            void handleSetHours(val);
+                          }
+                        }
+                      }}
+                      aria-label="Hours played"
+                      className="w-16 bg-transparent font-mono text-center text-[13px] font-semibold text-foreground focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    />
+                    <span className="font-mono text-[11px] text-ink-3 uppercase">hrs</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = (entry?.progress ?? 0) + 1;
+                      setHoursInput(null);
+                      void handleSetHours(next);
+                    }}
+                    disabled={updating}
+                    aria-label="Increase hours"
+                    className="grid size-9 place-items-center rounded-lg border border-line-2/70 text-ink-2 transition-colors hover:bg-surface-3 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 disabled:opacity-30 disabled:pointer-events-none"
+                  >
+                    <Plus className="size-3.5" strokeWidth={2.2} />
+                  </button>
+                </div>
+
+                {/* Rating Dots for Game */}
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.16em] uppercase text-ink-3">
+                    <span>Rating</span>
+                    <span
+                      className={cn(
+                        "inline-block min-w-[36px] font-semibold tabular-nums text-right transition-colors",
+                        (hoverRating || currentRating) > 0 ? "text-accent" : "text-ink-3/60",
+                      )}
+                    >
+                      {(hoverRating || currentRating) > 0 ? `${hoverRating || currentRating}/10` : "—/10"}
+                    </span>
+                  </div>
+
+                  <div
+                    className="flex items-center"
+                    role="radiogroup"
+                    aria-label="Rating out of 10"
+                    onMouseLeave={() => setHoverRating(0)}
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => {
+                      const activeValue = hoverRating > 0 ? hoverRating : currentRating;
+                      const isFilled = score <= activeValue;
+                      return (
+                        <button
+                          key={score}
+                          type="button"
+                          role="radio"
+                          aria-checked={score === currentRating}
+                          aria-label={`${score} out of 10`}
+                          onMouseEnter={() => setHoverRating(score)}
+                          onClick={() => void handleRatingClick(score)}
+                          disabled={updating}
+                          className="group relative flex size-5 items-center justify-center focus-visible:outline-none"
+                        >
+                          <span
+                            className={cn(
+                              "pointer-events-none size-2 rounded-full transition-all duration-150 transform group-hover:scale-125",
+                              isFilled
+                                ? "bg-accent shadow-xs scale-105"
+                                : "bg-surface-3 border border-line-2 group-hover:border-accent/60",
+                            )}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </>
           ) : (
             <>
-              {/* Non-episodic Media (Movies & Games): Clean Status Display without ep/stepper */}
+              {/* Movies: Clean Status Display without ep/stepper */}
               <div className="mt-8 flex items-baseline justify-between gap-4">
                 <div className="flex items-baseline gap-3">
                   <span

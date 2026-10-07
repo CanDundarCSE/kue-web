@@ -91,6 +91,8 @@ function SheetForm({
   const [deleting, setDeleting] = useState(false);
 
   const isEpisodic = item.type === "anime" || item.type === "series" || item.type === "manga";
+  const isGame = item.type === "game";
+  const hasProgress = isEpisodic || isGame;
 
   const availablePlatforms = useMemo(() => {
     if (item.type !== "game") return [];
@@ -284,17 +286,21 @@ function SheetForm({
       </div>
 
       {/* Progress Counter */}
-      {isEpisodic && (
+      {hasProgress && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="text-[11px] font-mono tracking-[0.1em] text-zinc-500 dark:text-zinc-400 uppercase">
-              Progress ({item.unit})
+              {isGame ? "Hours Played" : `Progress (${item.unit})`}
             </label>
-            {item.total && (
+            {item.total ? (
               <span className="font-mono text-xs text-zinc-400 dark:text-zinc-500">
                 Total: {item.total} {item.unit}
               </span>
-            )}
+            ) : isGame ? (
+              <span className="font-mono text-xs text-zinc-400 dark:text-zinc-500">
+                {current} hrs logged
+              </span>
+            ) : null}
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -306,17 +312,27 @@ function SheetForm({
               <Minus className="size-4" />
             </button>
 
-            <input
-              type="number"
-              min={0}
-              max={item.total ?? 9999}
-              value={current}
-              onChange={(e) => {
-                const val = parseInt(e.target.value, 10);
-                setCurrent(isNaN(val) ? 0 : Math.max(0, val));
-              }}
-              className="h-9 w-24 rounded-lg border border-zinc-200 bg-white px-3 text-center font-mono text-sm text-zinc-900 focus:border-sky-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
-            />
+            <div className="relative flex items-center">
+              <input
+                type="number"
+                min={0}
+                max={item.total ?? 99999}
+                value={current}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  setCurrent(isNaN(val) ? 0 : Math.max(0, val));
+                }}
+                className={cn(
+                  "h-9 rounded-lg border border-zinc-200 bg-white px-3 font-mono text-sm text-zinc-900 focus:border-sky-500 focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100",
+                  isGame ? "w-28 text-left pr-8" : "w-24 text-center",
+                )}
+              />
+              {isGame && (
+                <span className="pointer-events-none absolute right-3 font-mono text-xs text-zinc-400">
+                  h
+                </span>
+              )}
+            </div>
 
             <button
               type="button"

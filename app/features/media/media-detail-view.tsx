@@ -122,6 +122,7 @@ export default function MediaDetailView({
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [hoverRating, setHoverRating] = useState<number>(0);
 
   // Load media, similar titles, and user library entry
   useEffect(() => {
@@ -284,17 +285,15 @@ export default function MediaDetailView({
     }
   };
 
-  const handleRatingClick = async (starIndex: number) => {
+  const handleRatingClick = async (score: number) => {
     if (!user) {
       router.push("/login");
       return;
     }
     if (!media || updating) return;
 
-    // 5 dots correspond to 2, 4, 6, 8, 10 on backend's 1-10 rating scale
-    const targetRating = starIndex * 2;
     const currentRating = entry?.rating ?? 0;
-    const newRating = currentRating === targetRating ? 0 : targetRating;
+    const newRating = currentRating === score ? 0 : score;
 
     setUpdating(true);
     try {
@@ -390,7 +389,6 @@ export default function MediaDetailView({
           : 0;
 
   const currentRating = entry?.rating ?? 0; // 0 to 10
-  const activeDots = Math.round(currentRating / 2); // 0 to 5
 
   const communityScore =
     media.score !== null && media.score !== undefined
@@ -575,30 +573,50 @@ export default function MediaDetailView({
               </button>
             </div>
 
-            {/* Rating Dots */}
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono tracking-[0.16em] text-ink-3 uppercase mr-1">
-                Rating
-              </span>
-              <div className="flex items-center gap-1.5" role="radiogroup" aria-label="Rating out of 5">
-                {[1, 2, 3, 4, 5].map((dotIndex) => {
-                  const isFilled = dotIndex <= activeDots;
+            {/* Rating Dots (1 to 10) */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
+              <div className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.16em] uppercase text-ink-3">
+                <span>Rating</span>
+                <span
+                  className={cn(
+                    "font-semibold transition-colors",
+                    (hoverRating || currentRating) > 0 ? "text-accent" : "text-ink-3/60",
+                  )}
+                >
+                  {(hoverRating || currentRating) > 0 ? `${hoverRating || currentRating}/10` : "—/10"}
+                </span>
+              </div>
+
+              <div
+                className="flex items-center -mx-1"
+                role="radiogroup"
+                aria-label="Rating out of 10"
+                onMouseLeave={() => setHoverRating(0)}
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => {
+                  const activeValue = hoverRating > 0 ? hoverRating : currentRating;
+                  const isFilled = score <= activeValue;
                   return (
                     <button
-                      key={dotIndex}
+                      key={score}
                       type="button"
                       role="radio"
-                      aria-checked={isFilled}
-                      aria-label={`${dotIndex} out of 5 stars`}
-                      onClick={() => void handleRatingClick(dotIndex)}
+                      aria-checked={score === currentRating}
+                      aria-label={`${score} out of 10`}
+                      onMouseEnter={() => setHoverRating(score)}
+                      onClick={() => void handleRatingClick(score)}
                       disabled={updating}
-                      className={cn(
-                        "size-2.5 rounded-full transition-all duration-150 transform hover:scale-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
-                        isFilled
-                          ? "bg-accent shadow-xs"
-                          : "bg-surface-3 border border-line-2 hover:border-accent/60",
-                      )}
-                    />
+                      className="group relative flex size-5 items-center justify-center focus-visible:outline-none"
+                    >
+                      <span
+                        className={cn(
+                          "size-2 rounded-full transition-all duration-150 transform group-hover:scale-125",
+                          isFilled
+                            ? "bg-accent shadow-xs scale-105"
+                            : "bg-surface-3 border border-line-2 group-hover:border-accent/60",
+                        )}
+                      />
+                    </button>
                   );
                 })}
               </div>

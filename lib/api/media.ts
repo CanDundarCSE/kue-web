@@ -99,10 +99,11 @@ export async function setMediaProgress(mediaId: number, progress: number): Promi
 }
 
 export async function setMediaRating(mediaId: number, rating: number): Promise<boolean> {
+  const isDelete = rating <= 0;
   const response = await authFetch(`/api/ratings/${mediaId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ rating }),
+    method: isDelete ? "DELETE" : "PUT",
+    headers: isDelete ? undefined : { "Content-Type": "application/json" },
+    body: isDelete ? undefined : JSON.stringify({ rating }),
   }).catch(() => null);
 
   return !!response && response.ok;

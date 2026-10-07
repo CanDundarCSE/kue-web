@@ -2,12 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Check, Loader2, Plus, Search } from "lucide-react";
+import { ArrowRight, Search } from "lucide-react";
 
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
-import { authFetch } from "@/lib/api/client";
 import { mediaKey, type SearchMedia } from "@/lib/search";
-import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 
 const MEDIA_TYPES = new Set<MediaType>(["movie", "series", "game", "anime", "manga"]);
@@ -43,7 +41,6 @@ function ResultMeta({ media }: { media: SearchMedia }) {
 
 export default function SearchField() {
   const router = useRouter();
-  const { user } = useCurrentUser();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -53,8 +50,6 @@ export default function SearchField() {
   const [state, setState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [addedKeys, setAddedKeys] = useState<ReadonlySet<string>>(new Set());
-  const [addingKey, setAddingKey] = useState<string | null>(null);
   const requestRef = useRef(0);
 
   const trimmed = query.trim();
@@ -131,36 +126,20 @@ export default function SearchField() {
     return () => clearTimeout(handle);
   }, [trimmed, searchable]);
 
-  const addToList = async (media: SearchMedia, key: string) => {
-    if (addingKey !== null || addedKeys.has(key)) return;
+  const goToMedia = (media: SearchMedia) => {
+    setOpen(false);
+    setActiveIndex(-1);
 
-    if (!user) {
-      router.push("/login");
+    if (typeof media.id === "number" && media.id > 0) {
+      router.push(`/media/${media.id}`);
       return;
     }
 
-    setAddingKey(key);
-    const payload: Record<string, unknown> = {
-      mediaType: media.mediaType,
-      status: "planning",
-    };
-    if (typeof media.id === "number" && media.id > 0) {
-      payload.mediaId = media.id;
-    } else {
-      payload.externalSource = media.externalSource;
-      payload.externalId = media.externalId;
-    }
-    const response = await authFetch("/api/library", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    setAddingKey(null);
-
-    // 2xx added it; 400 "already in your library" also counts as listed.
-    if (response.ok || response.status === 400) {
-      setAddedKeys((prev) => new Set(prev).add(key));
-    }
+    const params = new URLSearchParams();
+    if (media.externalSource) params.set("source", media.externalSource);
+    if (media.externalId) params.set("id", media.externalId);
+    params.set("type", media.mediaType);
+    router.push(`/media/ext?${params.toString()}`);
   };
 
   const onInputKeyDown = (event: React.KeyboardEvent) => {
@@ -175,7 +154,7 @@ export default function SearchField() {
     } else if (event.key === "Enter") {
       if (activeIndex >= 0 && results[activeIndex]) {
         event.preventDefault();
-        void addToList(results[activeIndex], mediaKey(results[activeIndex], activeIndex));
+        goToMedia(results[activeIndex]);
       } else if (trimmed) {
         // No highlighted result: open the full result set on the search page.
         event.preventDefault();
@@ -278,8 +257,6 @@ export default function SearchField() {
               <ul role="listbox" aria-label="Search results">
                 {results.map((media, index) => {
                   const key = mediaKey(media, index);
-                  const inLibrary = addedKeys.has(key);
-                  const adding = addingKey === key;
 
                   return (
                     <li
@@ -291,11 +268,11 @@ export default function SearchField() {
                         index === activeIndex ? "bg-surface-3" : "hover:bg-surface-3",
                       )}
                     >
-                        <button
-                          type="button"
-                          onClick={() => void addToList(media, key)}
-                          className="flex min-w-0 flex-1 items-center gap-2.5 text-left focus-visible:outline-none"
-                        >
+                      <button
+                        type="button"
+                        onClick={() => goToMedia(media)}
+                        className="flex min-w-0 flex-1 items-center gap-2.5 text-left focus-visible:outline-none"
+                      >
                         <MediaAvatarCard
                           title={media.title}
                           year={media.year ?? undefined}
@@ -313,38 +290,19 @@ export default function SearchField() {
                         </span>
                       </button>
 
-                      {inLibrary ? (
-                        <span
-                          className="grid size-7 shrink-0 place-items-center rounded-md text-accent"
-                          aria-label={`${media.title} is in your library`}
-                        >
-                          <Check className="size-4" strokeWidth={2} />
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          aria-label={
-                            user
-                              ? `Add ${media.title} to your library`
-                              : "Sign in to add to your library"
-                          }
-                          disabled={adding || addingKey !== null}
-                          onClick={() => void addToList(media, key)}
-                          className={cn(
-                            "grid size-7 shrink-0 place-items-center rounded-md border border-line-2/70 text-ink-2",
-                            "transition-colors duration-150 motion-reduce:transition-none",
-                            "hover:bg-surface-3 hover:text-foreground",
-                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
-                            "disabled:pointer-events-none disabled:opacity-40",
-                          )}
-                        >
-                          {adding ? (
-                            <Loader2 className="size-3.5 animate-spin" strokeWidth={2} />
-                          ) : (
-                            <Plus className="size-3.5" strokeWidth={2} />
-                          )}
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        aria-label={`View details for ${media.title}`}
+                        onClick={() => goToMedia(media)}
+                        className={cn(
+                          "grid size-7 shrink-0 place-items-center rounded-md border border-line-2/70 text-ink-2",
+                          "transition-colors duration-150 motion-reduce:transition-none",
+                          "hover:bg-surface-3 hover:text-foreground",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+                        )}
+                      >
+                        <ArrowRight className="size-3.5" strokeWidth={2} />
+                      </button>
                     </li>
                   );
                 })}

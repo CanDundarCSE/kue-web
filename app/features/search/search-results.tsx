@@ -1,14 +1,12 @@
 "use client";
 
-import { Check, Loader2, Plus, Search } from "lucide-react";
+import { ArrowRight, Loader2, Plus, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
 import SectionLabel from "@/app/features/home/section-label";
-import { authFetch } from "@/lib/api/client";
 import { fetchSearchPage, mediaKey, type SearchMedia } from "@/lib/search";
-import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 24;
@@ -69,84 +67,60 @@ function RowSkeleton() {
 
 function ResultRow({
   media,
-  rowKey,
-  inLibrary,
-  adding,
-  busy,
-  signedIn,
-  onAdd,
+  onSelect,
 }: {
   media: SearchMedia;
-  rowKey: string;
-  inLibrary: boolean;
-  adding: boolean;
-  busy: boolean;
-  signedIn: boolean;
-  onAdd: () => void;
+  onSelect: () => void;
 }) {
   return (
-    <li key={rowKey} className="flex items-center gap-3.5 px-4 py-3">
-      <MediaAvatarCard
-        title={media.title}
-        year={media.year ?? undefined}
-        image={media.coverImage ?? undefined}
-        type={asMediaType(media.mediaType)}
-        size="md"
-      />
+    <li className="group flex items-center gap-3.5 px-4 py-3 transition-colors hover:bg-surface-3/50">
+      <button
+        type="button"
+        onClick={onSelect}
+        className="flex min-w-0 flex-1 items-center gap-3.5 text-left focus-visible:outline-none"
+      >
+        <MediaAvatarCard
+          title={media.title}
+          year={media.year ?? undefined}
+          image={media.coverImage ?? undefined}
+          type={asMediaType(media.mediaType)}
+          size="md"
+        />
 
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[14px] leading-tight font-semibold text-foreground">
-          {media.title}
-        </p>
-        <p className="mt-1 text-[11px] leading-none text-ink-3">
-          <RowMeta media={media} />
-        </p>
-        {media.description && (
-          <p className="mt-1.5 hidden truncate text-[12px] leading-snug text-ink-3 sm:line-clamp-2 sm:block">
-            {media.description}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[14px] leading-tight font-semibold text-foreground group-hover:text-accent transition-colors">
+            {media.title}
           </p>
-        )}
-      </div>
+          <p className="mt-1 text-[11px] leading-none text-ink-3">
+            <RowMeta media={media} />
+          </p>
+          {media.description && (
+            <p className="mt-1.5 hidden truncate text-[12px] leading-snug text-ink-3 sm:line-clamp-2 sm:block">
+              {media.description}
+            </p>
+          )}
+        </div>
+      </button>
 
-      {inLibrary ? (
-        <span
-          className="grid size-7 shrink-0 place-items-center rounded-md text-accent"
-          aria-label={`${media.title} is in your library`}
-        >
-          <Check className="size-4" strokeWidth={2} />
-        </span>
-      ) : (
-        <button
-          type="button"
-          aria-label={
-            signedIn
-              ? `Add ${media.title} to your library`
-              : "Sign in to add to your library"
-          }
-          disabled={busy}
-          onClick={onAdd}
-          className={cn(
-            "grid size-7 shrink-0 place-items-center rounded-md border border-line-2/70 text-ink-2",
-            "transition-colors duration-150 motion-reduce:transition-none",
-            "hover:bg-surface-3 hover:text-foreground",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
-            "disabled:pointer-events-none disabled:opacity-40",
-          )}
-        >
-          {adding ? (
-            <Loader2 className="size-3.5 animate-spin" strokeWidth={2} />
-          ) : (
-            <Plus className="size-3.5" strokeWidth={2} />
-          )}
-        </button>
-      )}
+      <button
+        type="button"
+        aria-label={`View details for ${media.title}`}
+        onClick={onSelect}
+        className={cn(
+          "grid size-8 shrink-0 place-items-center rounded-lg border border-line-2/70 text-ink-2",
+          "transition-colors duration-150 motion-reduce:transition-none",
+          "hover:bg-surface-3 hover:text-foreground",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+        )}
+      >
+        <ArrowRight className="size-4" strokeWidth={2} />
+      </button>
     </li>
   );
 }
 
 export default function SearchResults({ query, type }: { query: string; type: string }) {
   const router = useRouter();
-  const { user } = useCurrentUser();
 
   const [items, setItems] = useState<SearchMedia[]>([]);
   const [totalItems, setTotalItems] = useState<number | null>(null);
@@ -154,8 +128,6 @@ export default function SearchResults({ query, type }: { query: string; type: st
   const [lastPage, setLastPage] = useState(0);
   const [state, setState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [loadingMore, setLoadingMore] = useState(false);
-  const [addedKeys, setAddedKeys] = useState<ReadonlySet<string>>(new Set());
-  const [addingKey, setAddingKey] = useState<string | null>(null);
   const requestRef = useRef(0);
 
   const trimmed = query.trim();
@@ -225,36 +197,17 @@ export default function SearchResults({ query, type }: { query: string; type: st
     router.push(`/home/search?${params.toString()}`);
   };
 
-  const addToList = async (media: SearchMedia, key: string) => {
-    if (addingKey !== null || addedKeys.has(key)) return;
-
-    if (!user) {
-      router.push("/login");
+  const goToMedia = (media: SearchMedia) => {
+    if (typeof media.id === "number" && media.id > 0) {
+      router.push(`/media/${media.id}`);
       return;
     }
 
-    setAddingKey(key);
-    const payload: Record<string, unknown> = {
-      mediaType: media.mediaType,
-      status: "planning",
-    };
-    if (typeof media.id === "number" && media.id > 0) {
-      payload.mediaId = media.id;
-    } else {
-      payload.externalSource = media.externalSource;
-      payload.externalId = media.externalId;
-    }
-    const response = await authFetch("/api/library", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    setAddingKey(null);
-
-    // 2xx added it; 400 "already in your library" also counts as listed.
-    if (response.ok || response.status === 400) {
-      setAddedKeys((prev) => new Set(prev).add(key));
-    }
+    const params = new URLSearchParams();
+    if (media.externalSource) params.set("source", media.externalSource);
+    if (media.externalId) params.set("id", media.externalId);
+    params.set("type", media.mediaType);
+    router.push(`/media/ext?${params.toString()}`);
   };
 
   const activeFilterLabel = FILTERS.find((filter) => filter.value === type)?.label ?? null;
@@ -377,12 +330,7 @@ export default function SearchResults({ query, type }: { query: string; type: st
                   <ResultRow
                     key={rowKey}
                     media={media}
-                    rowKey={rowKey}
-                    inLibrary={addedKeys.has(rowKey)}
-                    adding={addingKey === rowKey}
-                    busy={addingKey !== null}
-                    signedIn={user !== null}
-                    onAdd={() => void addToList(media, rowKey)}
+                    onSelect={() => goToMedia(media)}
                   />
                 );
               })}

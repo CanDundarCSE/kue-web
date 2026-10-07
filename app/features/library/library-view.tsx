@@ -91,6 +91,8 @@ function mapDtoToEditable(dto: LibraryEntryDto): EditableLibraryItem {
     unit,
     rating: dto.rating ?? dto.media?.score ?? null,
     isFavorite: dto.isFavorite ?? false,
+    platform: dto.platform ?? null,
+    platforms: dto.media?.platforms ?? undefined,
   };
 }
 
@@ -309,7 +311,14 @@ export default function LibraryView() {
   // Save handler: persists to backend
   const handleSaveItem = async (updated: EditableLibraryItem) => {
     setItems((prev) =>
-      prev.map((i) => (i.mediaId === updated.mediaId ? updated : i)),
+      prev.map((i) =>
+        i.mediaId === updated.mediaId
+          ? {
+              ...updated,
+              studio: updated.platform ?? updated.studio,
+            }
+          : i,
+      ),
     );
 
     try {
@@ -321,6 +330,7 @@ export default function LibraryView() {
           progress: updated.current,
           rating: updated.rating,
           isFavorite: updated.isFavorite,
+          platform: updated.platform ?? "",
         }),
       });
       void refreshStats();

@@ -103,12 +103,26 @@ export async function fetchMediaLibraryEntry(mediaId: number): Promise<LibraryEn
 export async function saveMediaLibraryStatus(
   mediaId: number,
   status: string,
-  extra?: { progress?: number; rating?: number; isFavorite?: boolean },
+  extra?: { progress?: number; rating?: number; isFavorite?: boolean; platform?: string | null },
 ): Promise<LibraryEntryDto | null> {
   const response = await authFetch(`/api/library/${mediaId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ status, ...extra }),
+  }).catch(() => null);
+
+  if (!response || !response.ok) return null;
+  return (await response.json().catch(() => null)) as LibraryEntryDto | null;
+}
+
+export async function setMediaPlatform(
+  mediaId: number,
+  platform: string | null,
+): Promise<LibraryEntryDto | null> {
+  const response = await authFetch(`/api/library/${mediaId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ platform: platform ?? "" }),
   }).catch(() => null);
 
   if (!response || !response.ok) return null;
@@ -163,6 +177,8 @@ export async function addMediaToLibrary(payload: {
   totalUnits?: number | null;
   unitName?: string | null;
   runtimeMinutes?: number | null;
+  platforms?: string[] | null;
+  platform?: string | null;
   progress?: number;
   rating?: number;
   isFavorite?: boolean;

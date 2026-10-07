@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -8,6 +8,7 @@ import {
   ArrowRight,
   Check,
   ExternalLink,
+  Gamepad2,
   Heart,
   Loader2,
   Minus,
@@ -24,6 +25,7 @@ import {
   fetchMediaLibraryEntry,
   saveMediaLibraryStatus,
   setMediaFavorite,
+  setMediaPlatform,
   setMediaProgress,
   setMediaRating,
   addMediaToLibrary,
@@ -122,6 +124,7 @@ export default function MediaDetailView({
   const [similar, setSimilar] = useState<MediaDto[]>([]);
   const [similarIndex, setSimilarIndex] = useState(0);
   const [entry, setEntry] = useState<LibraryEntryDto | null>(null);
+  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -182,9 +185,13 @@ export default function MediaDetailView({
 
       if (mediaData && mediaData.id > 0 && user) {
         const entryData = await fetchMediaLibraryEntry(mediaData.id);
-        if (!cancelled) setEntry(entryData);
+        if (!cancelled) {
+          setEntry(entryData);
+          setSelectedPlatform(entryData?.platform ?? null);
+        }
       } else {
         setEntry(null);
+        setSelectedPlatform(null);
       }
 
       setLoading(false);
@@ -196,6 +203,73 @@ export default function MediaDetailView({
       cancelled = true;
     };
   }, [mediaId, externalParams?.source, externalParams?.id, externalParams?.type, user]);
+
+  const isGame = media?.mediaType === "game";
+  const currentPlatform = entry?.platform ?? selectedPlatform;
+
+  const gamePlatforms = useMemo(() => {
+    if (!isGame || !media) return [];
+    const list: string[] = [];
+    if (media.platforms && media.platforms.length > 0) {
+      list.push(...media.platforms);
+    }
+    if (currentPlatform && !list.some((p) => p.toLowerCase() === currentPlatform.toLowerCase())) {
+      list.push(currentPlatform);
+    }
+    // Only fall back to generic platform choices if the game has no platforms specified
+    if (list.length === 0) {
+      return ["PC", "PlayStation 5", "PlayStation 4", "Xbox Series X|S", "Xbox One", "Nintendo Switch"];
+    }
+    return list;
+  }, [isGame, media, currentPlatform]);
+
+  const handlePlatformChange = async (platformName: string) => {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    if (!media || updating) return;
+
+    const nextPlatform = currentPlatform?.toLowerCase() === platformName.toLowerCase() ? null : platformName;
+    setSelectedPlatform(nextPlatform);
+
+    setUpdating(true);
+    try {
+      if (entry && media.id > 0) {
+        const updated = await setMediaPlatform(media.id, nextPlatform);
+        if (updated) {
+          setEntry(updated);
+        } else {
+          setEntry((prev) => (prev ? { ...prev, platform: nextPlatform } : null));
+        }
+      } else {
+        const created = await addMediaToLibrary({
+          mediaId: media.id > 0 ? media.id : undefined,
+          mediaType: media.mediaType,
+          externalSource: media.externalSource,
+          externalId: media.externalId,
+          status: "planning",
+          title: media.title,
+          coverImage: media.coverImage,
+          year: media.year,
+          score: media.score,
+          totalUnits: media.totalUnits,
+          unitName: media.unitName,
+          runtimeMinutes: media.runtimeMinutes,
+          platforms: media.platforms,
+          platform: nextPlatform,
+          isFavorite: false,
+        });
+        if (created) {
+          setEntry(created);
+          setMedia((prev) => (prev ? { ...prev, id: created.mediaId } : null));
+          window.history.replaceState(null, "", `/media/${created.mediaId}`);
+        }
+      }
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   const handleStatusChange = async (newStatus: string) => {
     if (!user) {
@@ -212,12 +286,13 @@ export default function MediaDetailView({
       if (entry && media.id > 0) {
         const updated = await saveMediaLibraryStatus(media.id, newStatus, {
           progress: targetProgress,
+          platform: currentPlatform,
         });
         if (updated) {
           setEntry(updated);
         } else {
           setEntry((prev) =>
-            prev ? { ...prev, status: newStatus, progress: targetProgress } : null,
+            prev ? { ...prev, status: newStatus, progress: targetProgress, platform: currentPlatform } : null,
           );
         }
       } else {
@@ -234,6 +309,8 @@ export default function MediaDetailView({
           totalUnits: media.totalUnits,
           unitName: media.unitName,
           runtimeMinutes: media.runtimeMinutes,
+          platforms: media.platforms,
+          platform: currentPlatform,
           progress: targetProgress,
         });
         if (created) {
@@ -280,6 +357,8 @@ export default function MediaDetailView({
           totalUnits: media.totalUnits,
           unitName: media.unitName,
           runtimeMinutes: media.runtimeMinutes,
+          platforms: media.platforms,
+          platform: currentPlatform,
           progress: nextProgress,
         });
         if (created) {
@@ -331,6 +410,8 @@ export default function MediaDetailView({
           totalUnits: media.totalUnits,
           unitName: media.unitName,
           runtimeMinutes: media.runtimeMinutes,
+          platforms: media.platforms,
+          platform: currentPlatform,
           rating: newRating > 0 ? newRating : undefined,
         });
         if (created) {
@@ -381,6 +462,8 @@ export default function MediaDetailView({
           totalUnits: media.totalUnits,
           unitName: media.unitName,
           runtimeMinutes: media.runtimeMinutes,
+          platforms: media.platforms,
+          platform: currentPlatform,
           isFavorite: nextFavorite,
         });
         if (created) {
@@ -805,6 +888,54 @@ export default function MediaDetailView({
             </>
           )}
 
+          {/* Game Platform Selector */}
+          {isGame && (
+            <div className="mt-8 pt-6 border-t border-line">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.16em] uppercase text-ink-3">
+                  <Gamepad2 className="size-3.5 text-ink-3/80" />
+                  <span>Platform</span>
+                </div>
+                {currentPlatform && (
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[11px] font-semibold text-accent tracking-wider uppercase">
+                      {currentPlatform}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void handlePlatformChange(currentPlatform)}
+                      className="text-[10px] font-mono text-ink-3 hover:text-ink-1 uppercase transition-colors"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {gamePlatforms.map((plat) => {
+                  const isSelected = currentPlatform?.toLowerCase() === plat.toLowerCase();
+                  return (
+                    <button
+                      key={plat}
+                      type="button"
+                      onClick={() => void handlePlatformChange(plat)}
+                      disabled={updating}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 font-mono text-[11px] tracking-wider uppercase transition-all duration-150",
+                        isSelected
+                          ? "border-accent bg-accent/15 text-accent font-semibold shadow-xs"
+                          : "border-line-2 bg-surface-3/40 text-ink-2 hover:border-ink-3 hover:text-foreground hover:bg-surface-3",
+                      )}
+                    >
+                      <Gamepad2 className="size-3 shrink-0 opacity-70" />
+                      <span>{plat}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Status Tabs along the bottom */}
           <div className="mt-8 pt-6 border-t border-line">
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -853,6 +984,17 @@ export default function MediaDetailView({
                   {studioAuthor}
                 </span>
               </div>
+
+              {isGame && (
+                <div className="flex items-center justify-between py-3">
+                  <span className="text-[10px] font-mono tracking-[0.16em] text-ink-3 uppercase">
+                    Platform
+                  </span>
+                  <span className="text-[13px] font-medium text-foreground">
+                    {currentPlatform ?? (media.platforms && media.platforms.length > 0 ? media.platforms.join(", ") : "Multi-platform")}
+                  </span>
+                </div>
+              )}
 
               <div className="flex items-center justify-between py-3">
                 <span className="text-[10px] font-mono tracking-[0.16em] text-ink-3 uppercase">

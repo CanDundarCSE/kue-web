@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Heart, Loader2, Minus, Plus, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Gamepad2, Heart, Loader2, Minus, Plus, Trash2 } from "lucide-react";
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
 import RatingBadge from "@/app/components/rating-badge";
 import Button from "@/app/components/button";
@@ -27,6 +27,8 @@ export type EditableLibraryItem = {
   unit: string;
   rating?: number | null;
   isFavorite?: boolean;
+  platform?: string | null;
+  platforms?: string[];
 };
 
 export default function LibraryEntrySheet({
@@ -51,7 +53,7 @@ export default function LibraryEntrySheet({
         className="w-full sm:max-w-md overflow-y-auto p-6 bg-white text-zinc-900 border-zinc-200 dark:bg-zinc-950 dark:text-zinc-100 dark:border-zinc-800"
       >
         <SheetForm
-          key={`${item.mediaId}-${item.status}-${item.current}-${item.rating}-${item.isFavorite}`}
+          key={`${item.mediaId}-${item.status}-${item.current}-${item.rating}-${item.isFavorite}-${item.platform}`}
           item={item}
           onSave={async (updated) => {
             await onSave(updated);
@@ -84,10 +86,27 @@ function SheetForm({
   const [current, setCurrent] = useState(item.current);
   const [rating, setRating] = useState<number | null>(item.rating ?? null);
   const [isFavorite, setIsFavorite] = useState(item.isFavorite ?? false);
+  const [platform, setPlatform] = useState<string | null>(item.platform ?? null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const isEpisodic = item.type === "anime" || item.type === "series" || item.type === "manga";
+
+  const availablePlatforms = useMemo(() => {
+    if (item.type !== "game") return [];
+    const list: string[] = [];
+    if (item.platforms && item.platforms.length > 0) {
+      list.push(...item.platforms);
+    }
+    if (platform && !list.some((p) => p.toLowerCase() === platform.toLowerCase())) {
+      list.push(platform);
+    }
+    // Only fall back to generic platform choices if the game has no platforms specified
+    if (list.length === 0) {
+      return ["PC", "PlayStation 5", "PlayStation 4", "Xbox Series X|S", "Xbox One", "Nintendo Switch"];
+    }
+    return list;
+  }, [item.type, item.platforms, platform]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -98,6 +117,7 @@ function SheetForm({
         current,
         rating,
         isFavorite,
+        platform,
       });
     } finally {
       setSaving(false);
@@ -182,6 +202,47 @@ function SheetForm({
           })}
         </div>
       </div>
+
+      {/* Platform Picker (For Games) */}
+      {item.type === "game" && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-[11px] font-mono tracking-[0.1em] text-zinc-500 dark:text-zinc-400 uppercase">
+              Platform
+            </label>
+            {platform && (
+              <button
+                type="button"
+                onClick={() => setPlatform(null)}
+                className="text-[10px] font-mono text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {availablePlatforms.map((plat) => {
+              const isSelected = platform?.toLowerCase() === plat.toLowerCase();
+              return (
+                <button
+                  key={plat}
+                  type="button"
+                  onClick={() => setPlatform(isSelected ? null : plat)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors",
+                    isSelected
+                      ? "border-sky-500 bg-sky-50 text-sky-700 font-semibold dark:border-sky-500 dark:bg-sky-500/10 dark:text-sky-300"
+                      : "border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-200",
+                  )}
+                >
+                  <Gamepad2 className="size-3.5 shrink-0 opacity-70" />
+                  <span>{plat}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Favorite Toggle Card */}
       <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50/70 p-3.5 transition-colors dark:border-zinc-800 dark:bg-zinc-900/40">

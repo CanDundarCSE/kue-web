@@ -11,8 +11,11 @@ export async function GET(
     return Response.json({ message: "Invalid media ID." }, { status: 400, headers: NO_STORE });
   }
 
+  const { searchParams } = new URL(_request.url);
+  const pageSize = searchParams.get("pageSize") || "12";
+
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/media/${id}/similar?pageSize=8`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/media/${id}/similar?pageSize=${pageSize}`, {
       cache: "no-store",
       headers: { Accept: "application/json" },
     });
@@ -36,8 +39,12 @@ export async function GET(
       if (media?.mediaType) {
         const params = new URLSearchParams();
         params.set("type", media.mediaType);
-        if (media.genres?.[0]) params.set("genre", media.genres[0]);
-        params.set("pageSize", "8");
+        if (media.externalSource) params.set("source", media.externalSource);
+        if (media.externalId) params.set("id", media.externalId);
+        if (media.genres && media.genres.length > 0) {
+          params.set("genres", media.genres.join(","));
+        }
+        params.set("pageSize", pageSize);
 
         const fallbackRes = await fetch(`${API_BASE_URL}/api/v1/media/similar?${params.toString()}`, {
           cache: "no-store",

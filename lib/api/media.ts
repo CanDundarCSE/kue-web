@@ -45,19 +45,46 @@ export async function fetchExternalMedia(
   return (await response.json().catch(() => null)) as MediaDto | null;
 }
 
+export type FetchSimilarOptions = {
+  id?: number | null;
+  externalSource?: string | null;
+  externalId?: string | null;
+  type?: string | null;
+  genres?: string[] | null;
+  genre?: string | null;
+  pageSize?: number;
+};
+
 export async function fetchSimilarMedia(
-  id?: number | null,
-  type?: string | null,
-  genre?: string | null
+  paramsOrId?: number | null | FetchSimilarOptions,
+  legacyType?: string | null,
+  legacyGenre?: string | null
 ): Promise<MediaDto[]> {
   let endpoint = "";
-  if (id && id > 0) {
-    endpoint = `/api/media/${id}/similar`;
+  if (typeof paramsOrId === "object" && paramsOrId !== null) {
+    const { id, externalSource, externalId, type, genres, genre, pageSize = 12 } = paramsOrId;
+    if (id && id > 0) {
+      endpoint = `/api/media/${id}/similar?pageSize=${pageSize}`;
+    } else {
+      const params = new URLSearchParams();
+      if (type) params.set("type", type);
+      if (externalSource) params.set("source", externalSource);
+      if (externalId) params.set("id", externalId);
+      if (genres && genres.length > 0) {
+        params.set("genres", genres.join(","));
+      } else if (genre) {
+        params.set("genre", genre);
+      }
+      params.set("pageSize", String(pageSize));
+      endpoint = `/api/media/similar?${params.toString()}`;
+    }
+  } else if (paramsOrId && paramsOrId > 0) {
+    endpoint = `/api/media/${paramsOrId}/similar?pageSize=12`;
   } else {
     const params = new URLSearchParams();
-    if (type) params.set("type", type);
-    if (genre) params.set("genre", genre);
-    params.set("pageSize", "8");
+    if (legacyType) params.set("type", legacyType);
+    if (legacyGenre) params.set("genre", legacyGenre);
+    params.set("pageSize", "12");
     endpoint = `/api/media/similar?${params.toString()}`;
   }
 

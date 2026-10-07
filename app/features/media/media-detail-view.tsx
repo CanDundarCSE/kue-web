@@ -12,6 +12,7 @@ import {
   Loader2,
   Minus,
   Plus,
+  RefreshCw,
   Share2,
 } from "lucide-react";
 
@@ -118,6 +119,7 @@ export default function MediaDetailView({
 
   const [media, setMedia] = useState<MediaDto | null>(null);
   const [similar, setSimilar] = useState<MediaDto[]>([]);
+  const [similarIndex, setSimilarIndex] = useState(0);
   const [entry, setEntry] = useState<LibraryEntryDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -130,19 +132,22 @@ export default function MediaDetailView({
 
     async function load() {
       setLoading(true);
+      setSimilarIndex(0);
 
       let mediaData: MediaDto | null = null;
       let similarData: MediaDto[] = [];
 
       if (mediaId && mediaId > 0) {
-        const [fetchedMedia, fetchedSimilar] = await Promise.all([
-          fetchMediaDetails(mediaId),
-          fetchSimilarMedia(mediaId),
-        ]);
-        mediaData = fetchedMedia;
-        similarData = fetchedSimilar;
-        if (similarData.length === 0 && mediaData) {
-          similarData = await fetchSimilarMedia(null, mediaData.mediaType, mediaData.genres?.[0]);
+        mediaData = await fetchMediaDetails(mediaId);
+        if (mediaData) {
+          similarData = await fetchSimilarMedia({
+            id: mediaId,
+            externalSource: mediaData.externalSource,
+            externalId: mediaData.externalId,
+            type: mediaData.mediaType,
+            genres: mediaData.genres,
+            pageSize: 16,
+          });
         }
       } else if (externalParams?.source && externalParams?.id && externalParams?.type) {
         mediaData = await fetchExternalMedia(
@@ -151,12 +156,14 @@ export default function MediaDetailView({
           externalParams.type,
         );
         if (mediaData) {
-          if (mediaData.id > 0) {
-            similarData = await fetchSimilarMedia(mediaData.id);
-          }
-          if (similarData.length === 0) {
-            similarData = await fetchSimilarMedia(null, mediaData.mediaType, mediaData.genres?.[0]);
-          }
+          similarData = await fetchSimilarMedia({
+            id: mediaData.id > 0 ? mediaData.id : null,
+            externalSource: mediaData.externalSource || externalParams.source,
+            externalId: mediaData.externalId || externalParams.id,
+            type: mediaData.mediaType,
+            genres: mediaData.genres,
+            pageSize: 16,
+          });
         }
       }
 
@@ -410,6 +417,18 @@ export default function MediaDetailView({
   const studioAuthor = media.developer?.trim() || "Unknown";
 
   const moreCategoryLabel = `More ${media.mediaType}`;
+
+  const displayedSimilar =
+    similar.length > 4
+      ? similar
+          .slice(similarIndex, similarIndex + 4)
+          .concat(
+            similarIndex + 4 > similar.length
+              ? similar.slice(0, (similarIndex + 4) % similar.length)
+              : [],
+          )
+          .slice(0, 4)
+      : similar;
 
   return (
     <article className="mx-auto w-full max-w-[1080px] px-5 py-6 sm:px-8 sm:py-10">
@@ -719,11 +738,24 @@ export default function MediaDetailView({
           {/* More Titles Card */}
           <div className="rounded-2xl border border-line bg-surface-2 p-6 sm:p-7 shadow-xs">
             {/* Header */}
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] font-mono tracking-[0.16em] text-ink-3 uppercase whitespace-nowrap">
-                {moreCategoryLabel}
-              </span>
-              <div className="h-px flex-1 bg-line" aria-hidden="true" />
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <span className="text-[10px] font-mono tracking-[0.16em] text-ink-3 uppercase whitespace-nowrap">
+                  {moreCategoryLabel}
+                </span>
+                <div className="h-px flex-1 bg-line" aria-hidden="true" />
+              </div>
+              {similar.length > 4 && (
+                <button
+                  type="button"
+                  onClick={() => setSimilarIndex((prev) => (prev + 4) % similar.length)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-line-2/70 px-2.5 py-0.5 text-[9.5px] font-mono tracking-wider text-ink-3 uppercase transition-colors hover:border-line-2 hover:bg-surface-3 hover:text-foreground shrink-0"
+                  title="Cycle to next recommendations"
+                >
+                  <RefreshCw className="size-2.5" />
+                  <span>Cycle</span>
+                </button>
+              )}
             </div>
 
             {/* List */}
@@ -733,7 +765,7 @@ export default function MediaDetailView({
                   No related titles found in catalog.
                 </p>
               ) : (
-                similar.slice(0, 4).map((item) => {
+                displayedSimilar.map((item) => {
                   const itemYear = item.year ?? "Unknown";
                   const itemScore =
                     item.score !== null && item.score !== undefined

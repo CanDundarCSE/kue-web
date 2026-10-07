@@ -3,6 +3,13 @@ import { fetchProtected } from "@/lib/api/protected";
 const MEDIA_TYPES = new Set(["movie", "series", "game", "anime", "manga"]);
 const STATUSES = new Set(["planning", "in_progress", "completed", "on_hold", "dropped"]);
 
+// Retrieve library items for the signed-in user.
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const qs = searchParams.toString();
+  return fetchProtected(`/me/library${qs ? `?${qs}` : ""}`);
+}
+
 // Add a title to the signed-in user's library. Search results and the
 // "Add title" flow land here; the backend resolves the media by id or
 // external source/id and rejects duplicates.

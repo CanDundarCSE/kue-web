@@ -1,41 +1,84 @@
+"use client";
+
 import { ChevronRight } from "lucide-react";
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
 import RatingBadge from "@/app/components/rating-badge";
 import StatusBadge, { type MediaStatus } from "@/app/components/status-badge";
+import { cn } from "@/lib/utils";
 
-function ProgressMeter({
-  current,
-  total,
-  unit,
-}: {
+export const LIBRARY_GRID_LAYOUT =
+  "grid grid-cols-[1fr_auto_24px] lg:grid-cols-[1fr_130px_180px_100px_24px] xl:grid-cols-[1fr_140px_200px_110px_24px] items-center gap-4 px-4";
+
+export type MediaProgressData = {
   current: number;
-  total: number;
-  unit: string;
+  total?: number;
+  unit?: string;
+  isCompleted?: boolean;
+};
+
+export function getCompletedProgressLabel(type: MediaType): string {
+  switch (type) {
+    case "movie":
+      return "watched";
+    case "game":
+      return "completed";
+    case "manga":
+      return "read";
+    default:
+      return "completed";
+  }
+}
+
+function StackedProgressMeter({
+  progress,
+  type,
+}: {
+  progress?: MediaProgressData;
+  type: MediaType;
 }) {
-  const percent = total > 0 ? Math.min(100, Math.max(0, Math.round((current / total) * 100))) : 0;
+  if (!progress) {
+    return <span className="text-[11px] font-mono text-zinc-400 dark:text-zinc-500">—</span>;
+  }
+
+  const { current, total, unit = "ep", isCompleted } = progress;
+
+  if (isCompleted && (!total || total <= 1)) {
+    return (
+      <span className="text-[11px] font-mono lowercase tracking-wide text-zinc-500 dark:text-zinc-400">
+        {getCompletedProgressLabel(type)}
+      </span>
+    );
+  }
+
+  if (total && total > 0) {
+    const percent = Math.min(100, Math.max(0, Math.round((current / total) * 100)));
+
+    return (
+      <div className="flex w-full max-w-[150px] xl:max-w-[170px] flex-col gap-1.5">
+        <div
+          role="progressbar"
+          aria-valuenow={percent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`${current} of ${total} ${unit}`}
+          className="h-[3px] w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"
+        >
+          <div
+            className="h-full rounded-full bg-zinc-900 transition-all duration-300 dark:bg-zinc-100"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+        <p className="font-mono text-[11px] leading-none whitespace-nowrap text-zinc-500 dark:text-zinc-400">
+          {current}/{total} {unit} · {percent}%
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex w-full min-w-0 items-center gap-3">
-      <div
-        role="progressbar"
-        aria-valuenow={percent}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label={`${current} of ${total} ${unit}`}
-        className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-[#1e40af]/12 dark:bg-[#6b7bf5]/20"
-      >
-        <div
-          className="h-full rounded-full bg-[#1e40af] dark:bg-[#6b7bf5]"
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-      <p className="shrink-0 text-[11px] leading-none whitespace-nowrap text-zinc-500 dark:text-zinc-400">
-        <span className="text-zinc-700 dark:text-zinc-200">
-          {current}/{total}
-        </span>{" "}
-        {unit} · {percent}%
-      </p>
-    </div>
+    <p className="font-mono text-[11px] leading-none whitespace-nowrap text-zinc-500 dark:text-zinc-400">
+      {current} {unit}
+    </p>
   );
 }
 
@@ -48,6 +91,7 @@ export default function MediaLibraryRow({
   status,
   progress,
   rating,
+  onClick,
   className,
 }: {
   title: string;
@@ -55,64 +99,89 @@ export default function MediaLibraryRow({
   studio?: string;
   image?: string;
   type: MediaType;
-  status: MediaStatus;
-  progress?: { current: number; total: number; unit: string };
+  status: MediaStatus | string;
+  progress?: MediaProgressData;
   rating?: number;
+  onClick?: () => void;
   className?: string;
 }) {
-  return (
-    <div
-      className={[
-        "border-b border-zinc-200 px-3 py-3.5 last:border-b-0 sm:px-4",
-        "dark:border-zinc-800",
-        className ?? "",
-      ].join(" ")}
-    >
-      <div className="flex items-start gap-3 sm:gap-4 lg:items-center">
-        <MediaAvatarCard title={title} year={year} image={image} type={type} />
+  const Component = onClick ? "button" : "div";
 
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[15px] leading-tight font-semibold text-zinc-900 dark:text-zinc-50">
+  return (
+    <Component
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
+      className={cn(
+        "group w-full border-b border-zinc-200 py-3.5 text-left transition-colors dark:border-zinc-800/80",
+        "last:border-b-0 hover:bg-zinc-50/80 dark:hover:bg-zinc-900/50",
+        onClick && "cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent",
+        LIBRARY_GRID_LAYOUT,
+        className,
+      )}
+    >
+      {/* 1. Title Column */}
+      <div className="flex min-w-0 items-center gap-3.5">
+        <MediaAvatarCard
+          title={title}
+          year={year}
+          image={image}
+          type={type}
+          size="md"
+          className="shrink-0"
+        />
+
+        <div className="min-w-0 flex-1 pr-2">
+          <p className="truncate text-[14px] font-semibold text-zinc-900 group-hover:text-black transition-colors dark:text-zinc-100 dark:group-hover:text-white">
             {title}
           </p>
 
           {(year !== undefined || studio) && (
-            <p className="mt-1 truncate text-[11px] leading-none text-zinc-500 dark:text-zinc-400">
+            <p className="mt-1 truncate text-[11px] font-mono tracking-[0.06em] text-zinc-400 dark:text-zinc-500 uppercase">
               {year !== undefined && <span>{year}</span>}
               {year !== undefined && studio && <span> · </span>}
-              {studio && <span className="tracking-[0.08em]">{studio.toUpperCase()}</span>}
+              {studio && <span>{studio.toUpperCase()}</span>}
             </p>
           )}
 
-          <div className="mt-2.5 lg:hidden">
-            <StatusBadge status={status} />
+          {/* Mobile Status / Progress */}
+          <div className="mt-2 flex flex-wrap items-center gap-3 lg:hidden">
+            <StatusBadge status={status} variant="dot" />
+            {progress && (
+              <span className="font-mono text-[10px] text-zinc-500 dark:text-zinc-400">
+                {progress.isCompleted && (!progress.total || progress.total <= 1)
+                  ? getCompletedProgressLabel(type)
+                  : progress.total
+                    ? `${progress.current}/${progress.total} ${progress.unit ?? "ep"}`
+                    : `${progress.current} ${progress.unit ?? "ep"}`}
+              </span>
+            )}
           </div>
         </div>
-
-        <div className="hidden w-28 shrink-0 lg:block">
-          <StatusBadge status={status} />
-        </div>
-
-        {progress && (
-          <div className="hidden w-44 shrink-0 lg:block xl:w-52">
-            <ProgressMeter {...progress} />
-          </div>
-        )}
-
-        {rating !== undefined && (
-          <div className="shrink-0 self-start lg:self-center">
-            <RatingBadge rating={rating} />
-          </div>
-        )}
-
-        <ChevronRight className="size-4 shrink-0 self-start text-zinc-300 lg:self-center dark:text-zinc-600" />
       </div>
 
-      {progress && (
-        <div className="mt-3 lg:hidden">
-          <ProgressMeter {...progress} />
-        </div>
-      )}
-    </div>
+      {/* 2. Status Column */}
+      <div className="hidden lg:flex items-center min-w-0">
+        <StatusBadge status={status} variant="dot" />
+      </div>
+
+      {/* 3. Progress Column */}
+      <div className="hidden lg:flex items-center min-w-0">
+        <StackedProgressMeter progress={progress} type={type} />
+      </div>
+
+      {/* 4. Rating Column */}
+      <div className="flex justify-center">
+        {rating !== undefined && rating !== null ? (
+          <RatingBadge rating={rating} />
+        ) : (
+          <span className="text-[12px] text-zinc-300 dark:text-zinc-600">—</span>
+        )}
+      </div>
+
+      {/* 5. Action / Chevron Column */}
+      <div className="flex justify-end text-zinc-300 transition-colors group-hover:text-zinc-500 dark:text-zinc-600 dark:group-hover:text-zinc-300">
+        <ChevronRight className="size-4" />
+      </div>
+    </Component>
   );
 }

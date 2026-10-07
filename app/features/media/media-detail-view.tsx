@@ -394,7 +394,16 @@ export default function MediaDetailView({
   }
 
   const statusOptions = getStatusOptions(media.mediaType);
+  const isEpisodic = media.mediaType === "series" || media.mediaType === "anime" || media.mediaType === "manga";
   const currentStatus = entry?.status ?? null;
+  const activeStatusOption = statusOptions.find((opt) => opt.key === currentStatus);
+  const statusDisplayTitle = activeStatusOption
+    ? activeStatusOption.label
+    : media.mediaType === "movie"
+      ? "Unwatched"
+      : media.mediaType === "game"
+        ? "Not played"
+        : "Not in library";
   const currentProgress = entry?.progress ?? 0;
   const totalUnits = media.totalUnits;
   const unitLabel = (media.unitName || (media.mediaType === "manga" ? "ch" : "ep")).toLowerCase();
@@ -551,108 +560,182 @@ export default function MediaDetailView({
             <div className="h-px flex-1 bg-line" aria-hidden="true" />
           </div>
 
-          {/* Big Progress Number */}
-          <div className="mt-8 flex items-baseline">
-            <span className="font-serif text-[48px] sm:text-[56px] leading-none tracking-tight text-foreground">
-              {entry ? currentProgress : "—"}
-            </span>
-            <span className="ml-2 font-serif text-[22px] sm:text-[26px] tracking-normal text-ink-3 italic">
-              / {totalUnits ?? "—"} {unitLabel}
-            </span>
-          </div>
-
-          {/* Linear Progress Bar */}
-          <div
-            className="mt-4 h-[3px] w-full max-w-[280px] rounded-full bg-surface-3 overflow-hidden"
-            role="progressbar"
-            aria-valuenow={percentage}
-            aria-valuemin={0}
-            aria-valuemax={100}
-          >
-            <div
-              className="h-full bg-foreground rounded-full transition-all duration-300"
-              style={{ width: `${percentage}%` }}
-            />
-          </div>
-
-          {/* Stepper + Rating Row */}
-          <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
-            {/* Stepper: [-] 64% [+] */}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => void handleProgressChange(-1)}
-                disabled={updating || currentProgress <= 0}
-                aria-label="Decrease progress"
-                className="grid size-9 place-items-center rounded-lg border border-line-2/70 text-ink-2 transition-colors hover:bg-surface-3 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 disabled:opacity-30 disabled:pointer-events-none"
-              >
-                <Minus className="size-3.5" strokeWidth={2.2} />
-              </button>
-
-              <span className="min-w-[46px] text-center font-mono text-[12.5px] font-semibold text-foreground">
-                {percentage}%
-              </span>
-
-              <button
-                type="button"
-                onClick={() => void handleProgressChange(1)}
-                disabled={updating || (totalUnits ? currentProgress >= totalUnits : false)}
-                aria-label="Increase progress"
-                className="grid size-9 place-items-center rounded-lg border border-line-2/70 text-ink-2 transition-colors hover:bg-surface-3 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 disabled:opacity-30 disabled:pointer-events-none"
-              >
-                <Plus className="size-3.5" strokeWidth={2.2} />
-              </button>
-            </div>
-
-            {/* Rating Dots (1 to 10) */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
-              <div className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.16em] uppercase text-ink-3">
-                <span>Rating</span>
-                <span
-                  className={cn(
-                    "font-semibold transition-colors",
-                    (hoverRating || currentRating) > 0 ? "text-accent" : "text-ink-3/60",
-                  )}
-                >
-                  {(hoverRating || currentRating) > 0 ? `${hoverRating || currentRating}/10` : "—/10"}
+          {isEpisodic ? (
+            <>
+              {/* Big Progress Number */}
+              <div className="mt-8 flex items-baseline">
+                <span className="font-serif text-[48px] sm:text-[56px] leading-none tracking-tight text-foreground">
+                  {entry ? currentProgress : "—"}
+                </span>
+                <span className="ml-2 font-serif text-[22px] sm:text-[26px] tracking-normal text-ink-3 italic">
+                  / {totalUnits ?? "—"} {unitLabel}
                 </span>
               </div>
 
+              {/* Linear Progress Bar */}
               <div
-                className="flex items-center -mx-1"
-                role="radiogroup"
-                aria-label="Rating out of 10"
-                onMouseLeave={() => setHoverRating(0)}
+                className="mt-4 h-[3px] w-full max-w-[280px] rounded-full bg-surface-3 overflow-hidden"
+                role="progressbar"
+                aria-valuenow={percentage}
+                aria-valuemin={0}
+                aria-valuemax={100}
               >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => {
-                  const activeValue = hoverRating > 0 ? hoverRating : currentRating;
-                  const isFilled = score <= activeValue;
-                  return (
-                    <button
-                      key={score}
-                      type="button"
-                      role="radio"
-                      aria-checked={score === currentRating}
-                      aria-label={`${score} out of 10`}
-                      onMouseEnter={() => setHoverRating(score)}
-                      onClick={() => void handleRatingClick(score)}
-                      disabled={updating}
-                      className="group relative flex size-5 items-center justify-center focus-visible:outline-none"
-                    >
-                      <span
-                        className={cn(
-                          "size-2 rounded-full transition-all duration-150 transform group-hover:scale-125",
-                          isFilled
-                            ? "bg-accent shadow-xs scale-105"
-                            : "bg-surface-3 border border-line-2 group-hover:border-accent/60",
-                        )}
-                      />
-                    </button>
-                  );
-                })}
+                <div
+                  className="h-full bg-foreground rounded-full transition-all duration-300"
+                  style={{ width: `${percentage}%` }}
+                />
               </div>
-            </div>
-          </div>
+
+              {/* Stepper + Rating Row */}
+              <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
+                {/* Stepper: [-] 64% [+] */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void handleProgressChange(-1)}
+                    disabled={updating || currentProgress <= 0}
+                    aria-label="Decrease progress"
+                    className="grid size-9 place-items-center rounded-lg border border-line-2/70 text-ink-2 transition-colors hover:bg-surface-3 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 disabled:opacity-30 disabled:pointer-events-none"
+                  >
+                    <Minus className="size-3.5" strokeWidth={2.2} />
+                  </button>
+
+                  <span className="min-w-[46px] text-center font-mono text-[12.5px] font-semibold text-foreground">
+                    {percentage}%
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => void handleProgressChange(1)}
+                    disabled={updating || (totalUnits ? currentProgress >= totalUnits : false)}
+                    aria-label="Increase progress"
+                    className="grid size-9 place-items-center rounded-lg border border-line-2/70 text-ink-2 transition-colors hover:bg-surface-3 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 disabled:opacity-30 disabled:pointer-events-none"
+                  >
+                    <Plus className="size-3.5" strokeWidth={2.2} />
+                  </button>
+                </div>
+
+                {/* Rating Dots (1 to 10) */}
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.16em] uppercase text-ink-3">
+                    <span>Rating</span>
+                    <span
+                      className={cn(
+                        "inline-block min-w-[36px] font-semibold tabular-nums text-right transition-colors",
+                        (hoverRating || currentRating) > 0 ? "text-accent" : "text-ink-3/60",
+                      )}
+                    >
+                      {(hoverRating || currentRating) > 0 ? `${hoverRating || currentRating}/10` : "—/10"}
+                    </span>
+                  </div>
+
+                  <div
+                    className="flex items-center"
+                    role="radiogroup"
+                    aria-label="Rating out of 10"
+                    onMouseLeave={() => setHoverRating(0)}
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => {
+                      const activeValue = hoverRating > 0 ? hoverRating : currentRating;
+                      const isFilled = score <= activeValue;
+                      return (
+                        <button
+                          key={score}
+                          type="button"
+                          role="radio"
+                          aria-checked={score === currentRating}
+                          aria-label={`${score} out of 10`}
+                          onMouseEnter={() => setHoverRating(score)}
+                          onClick={() => void handleRatingClick(score)}
+                          disabled={updating}
+                          className="group relative flex size-5 items-center justify-center focus-visible:outline-none"
+                        >
+                          <span
+                            className={cn(
+                              "pointer-events-none size-2 rounded-full transition-all duration-150 transform group-hover:scale-125",
+                              isFilled
+                                ? "bg-accent shadow-xs scale-105"
+                                : "bg-surface-3 border border-line-2 group-hover:border-accent/60",
+                            )}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Non-episodic Media (Movies & Games): Clean Status Display without ep/stepper */}
+              <div className="mt-8 flex items-baseline justify-between gap-4">
+                <div className="flex items-baseline gap-3">
+                  <span
+                    className={cn(
+                      "font-serif text-[42px] sm:text-[48px] leading-none tracking-tight",
+                      currentStatus ? "text-foreground" : "text-ink-3/70",
+                    )}
+                  >
+                    {statusDisplayTitle}
+                  </span>
+                  {media.runtimeMinutes ? (
+                    <span className="font-mono text-[12px] tracking-wider text-ink-3">
+                      · {media.runtimeMinutes} min
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+
+              {/* Rating Dots Row */}
+              <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.16em] uppercase text-ink-3">
+                  <span>Rating</span>
+                  <span
+                    className={cn(
+                      "inline-block min-w-[36px] font-semibold tabular-nums text-right transition-colors",
+                      (hoverRating || currentRating) > 0 ? "text-accent" : "text-ink-3/60",
+                    )}
+                  >
+                    {(hoverRating || currentRating) > 0 ? `${hoverRating || currentRating}/10` : "—/10"}
+                  </span>
+                </div>
+
+                <div
+                  className="flex items-center"
+                  role="radiogroup"
+                  aria-label="Rating out of 10"
+                  onMouseLeave={() => setHoverRating(0)}
+                >
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => {
+                    const activeValue = hoverRating > 0 ? hoverRating : currentRating;
+                    const isFilled = score <= activeValue;
+                    return (
+                      <button
+                        key={score}
+                        type="button"
+                        role="radio"
+                        aria-checked={score === currentRating}
+                        aria-label={`${score} out of 10`}
+                        onMouseEnter={() => setHoverRating(score)}
+                        onClick={() => void handleRatingClick(score)}
+                        disabled={updating}
+                        className="group relative flex size-5 items-center justify-center focus-visible:outline-none"
+                      >
+                        <span
+                          className={cn(
+                            "pointer-events-none size-2 rounded-full transition-all duration-150 transform group-hover:scale-125",
+                            isFilled
+                              ? "bg-accent shadow-xs scale-105"
+                              : "bg-surface-3 border border-line-2 group-hover:border-accent/60",
+                          )}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Status Tabs along the bottom */}
           <div className="mt-8 pt-6 border-t border-line">

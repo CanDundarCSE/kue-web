@@ -8,14 +8,18 @@ import {
   Compass,
   House,
   Menu,
-  Plus,
   TrendingUp,
   User,
   type LucideIcon,
 } from "lucide-react";
 
-import Button from "@/app/components/button";
 import { SheetClose, SheetDescription, SheetTitle } from "@/app/components/ui/sheet";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/app/components/ui/tooltip";
 import LogoMark from "@/app/features/landing/logo-mark";
 import { cn } from "@/lib/utils";
 
@@ -77,41 +81,46 @@ function NavRow({
   return inSheet ? <SheetClose asChild>{link}</SheetClose> : link;
 }
 
-// Icon-only row used by the collapsed desktop rail. Labels aren't visible, so
-// each one carries a native tooltip (`title`) + `aria-label`, and any badge
-// count shows as a small dot since there's no room for the number.
+// Icon-only row used by the collapsed desktop rail. Labels aren't visible in the
+// layout, so each one is wrapped in a Radix tooltip on hover/focus and carries an
+// accessible `aria-label`. Any badge count shows as a small dot.
 function CollapsedNavRow({ item, active }: { item: AppSidebarItem; active: boolean }) {
   const Icon = item.icon;
 
   return (
-    <Link
-      href={item.href}
-      title={item.label}
-      aria-label={item.label}
-      data-active={active || undefined}
-      aria-current={active ? "page" : undefined}
-      className={[
-        "relative grid size-9 place-items-center rounded-lg text-ink-2",
-        "transition-colors duration-150 motion-reduce:transition-none",
-        "hover:bg-surface-3 hover:text-foreground",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
-        "data-[active]:bg-surface-3 data-[active]:text-foreground",
-      ].join(" ")}
-    >
-      <Icon className="size-[18px]" strokeWidth={1.75} />
-      {item.count !== undefined ? (
-        <span
-          aria-hidden
-          className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-accent ring-2 ring-background"
-        />
-      ) : null}
-    </Link>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Link
+          href={item.href}
+          aria-label={item.label}
+          data-active={active || undefined}
+          aria-current={active ? "page" : undefined}
+          className={[
+            "relative grid size-9 place-items-center rounded-lg text-ink-2",
+            "transition-colors duration-150 motion-reduce:transition-none",
+            "hover:bg-surface-3 hover:text-foreground",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+            "data-[active]:bg-surface-3 data-[active]:text-foreground",
+          ].join(" ")}
+        >
+          <Icon className="size-[18px]" strokeWidth={1.75} />
+          {item.count !== undefined ? (
+            <span
+              aria-hidden
+              className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-accent ring-2 ring-background"
+            />
+          ) : null}
+        </Link>
+      </TooltipTrigger>
+      <TooltipContent side="right" sideOffset={10}>
+        {item.label}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
 export default function AppSidebar({
   items = DEFAULT_ITEMS,
-  onAddTitle,
   className,
   inSheet = false,
   collapsed = false,
@@ -181,35 +190,28 @@ export default function AppSidebar({
       </div>
 
       {collapsed ? (
-        <nav aria-label="Primary" className="flex flex-col items-center gap-1 px-2 pt-3">
-          {items.map((item) => (
-            <CollapsedNavRow
-              key={item.label}
-              item={item}
-              active={isActive(pathname, item.href)}
-            />
-          ))}
-        </nav>
-      ) : (
-        <>
-          <nav aria-label="Primary" className="flex shrink-0 flex-col gap-0.5 px-3">
+        <TooltipProvider delayDuration={150}>
+          <nav aria-label="Primary" className="flex flex-col items-center gap-1 px-2 pt-3">
             {items.map((item) => (
-              <NavRow
+              <CollapsedNavRow
                 key={item.label}
                 item={item}
                 active={isActive(pathname, item.href)}
-                inSheet={inSheet}
               />
             ))}
           </nav>
-
-          <div className="mt-auto shrink-0 px-5 pb-5">
-            <Button fullWidth onClick={onAddTitle}>
-              <Plus className="size-4" strokeWidth={2.25} />
-              Add title
-            </Button>
-          </div>
-        </>
+        </TooltipProvider>
+      ) : (
+        <nav aria-label="Primary" className="flex shrink-0 flex-col gap-0.5 px-3">
+          {items.map((item) => (
+            <NavRow
+              key={item.label}
+              item={item}
+              active={isActive(pathname, item.href)}
+              inSheet={inSheet}
+            />
+          ))}
+        </nav>
       )}
     </div>
   );

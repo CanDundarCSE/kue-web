@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 
 import AppShell from "@/app/components/app-shell";
+import { getSidebarCollapsed } from "@/lib/sidebar";
 
-export default function ProfileLayout({ children }: { children: ReactNode }) {
-  return <AppShell>{children}</AppShell>;
+export default async function ProfileLayout({ children }: { children: ReactNode }) {
+  const defaultCollapsed = await getSidebarCollapsed();
+  return <AppShell defaultCollapsed={defaultCollapsed}>{children}</AppShell>;
 }

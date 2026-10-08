@@ -1,19 +1,87 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
 
 import AppSidebar from "@/app/components/app-sidebar";
 import AppTopBar from "@/app/components/app-topbar";
 import { CurrentUserProvider } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 
+const SIDEBAR_COOKIE_NAME = "kue_sidebar_collapsed";
+
+// Module-level cache so client-side navigation between separate route layouts
+// instantly retains the current collapse state without resetting or waiting.
+let cachedSidebarCollapsed: boolean | null = null;
+const listeners = new Set<() => void>();
+
+function subscribe(callback: () => void) {
+  listeners.add(callback);
+
+  // If client-side storage has a saved preference and the in-memory cache hasn't been set yet,
+  // sync it once after hydration without blocking initial render.
+  if (cachedSidebarCollapsed === null && typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(SIDEBAR_COOKIE_NAME);
+      if (stored !== null) {
+        cachedSidebarCollapsed = stored === "true";
+        callback();
+      }
+    } catch {
+      // Storage access may be restricted
+    }
+  }
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === SIDEBAR_COOKIE_NAME && event.newValue !== null) {
+      cachedSidebarCollapsed = event.newValue === "true";
+      callback();
+    }
+  };
+
+  window.addEventListener("storage", handleStorage);
+  return () => {
+    listeners.delete(callback);
+    window.removeEventListener("storage", handleStorage);
+  };
+}
+
+function notify() {
+  for (const listener of listeners) {
+    listener();
+  }
+}
+
+function setSidebarCollapsed(value: boolean) {
+  cachedSidebarCollapsed = value;
+  try {
+    document.cookie = `${SIDEBAR_COOKIE_NAME}=${value}; path=/; max-age=31536000; SameSite=Lax`;
+    localStorage.setItem(SIDEBAR_COOKIE_NAME, String(value));
+  } catch {
+    // Storage access may be restricted in some environments (e.g. private mode)
+  }
+  notify();
+}
+
 // The app shell: persistent desktop rail, top bar, and content column.
-// Shared by the /home and /profile layouts so both sections keep the same
+// Shared across the app layouts so all sections keep the same
 // chrome (session provider included).
-export default function AppShell({ children }: { children: ReactNode }) {
-  // Desktop rail collapse state. The mobile <lg sheet is unrelated and drives
-  // itself; this only affects the persistent desktop sidebar.
-  const [collapsed, setCollapsed] = useState(false);
+export default function AppShell({
+  children,
+  defaultCollapsed = false,
+}: {
+  children: ReactNode;
+  defaultCollapsed?: boolean;
+}) {
+  const collapsed = useSyncExternalStore(
+    subscribe,
+    () => {
+      if (cachedSidebarCollapsed !== null) {
+        return cachedSidebarCollapsed;
+      }
+      return defaultCollapsed;
+    },
+    () => defaultCollapsed,
+  );
 
   return (
     <CurrentUserProvider>
@@ -27,7 +95,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         >
           <AppSidebar
             collapsed={collapsed}
-            onToggleCollapse={() => setCollapsed((value) => !value)}
+            onToggleCollapse={() => setSidebarCollapsed(!collapsed)}
           />
         </aside>
 

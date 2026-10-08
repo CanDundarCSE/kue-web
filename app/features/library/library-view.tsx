@@ -90,7 +90,7 @@ function mapDtoToEditable(dto: LibraryEntryDto): EditableLibraryItem {
     current,
     total,
     unit,
-    rating: dto.rating ?? dto.media?.score ?? null,
+     rating: dto.rating ?? null,
     isFavorite: dto.isFavorite ?? false,
     platform: dto.platform ?? null,
     platforms: dto.media?.platforms ?? undefined,

@@ -85,6 +85,7 @@ export default function ActivityHeatmap({
   metric = "total",
   ramp = CELL_LEVEL,
   label,
+  hideHeader = false,
   className,
 }: {
   items: ActivityHeatmapItem[];
@@ -93,6 +94,7 @@ export default function ActivityHeatmap({
   metric?: ActivityHeatmapMetric;
   ramp?: string[];
   label?: string;
+  hideHeader?: boolean;
   className?: string;
 }) {
   const window = Math.min(53, Math.max(1, Math.trunc(weeks)));
@@ -156,12 +158,14 @@ export default function ActivityHeatmap({
 
   return (
     <div className={["flex flex-col gap-3", className ?? ""].join(" ")}>
-      <div className="flex items-center gap-3">
-        <p className="text-[11px] font-semibold tracking-[0.18em] text-zinc-500 uppercase">
-          {label ?? `Last ${window} weeks — ${METRIC_CELL[metric]}`}
-        </p>
-        <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
-      </div>
+      {!hideHeader && (
+        <div className="flex items-center gap-3">
+          <p className="text-[11px] font-semibold tracking-[0.18em] text-zinc-500 uppercase">
+            {label ?? `Last ${window} weeks — ${METRIC_CELL[metric]}`}
+          </p>
+          <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+        </div>
+      )}
 
       <TooltipProvider>
         <div className="overflow-x-auto">

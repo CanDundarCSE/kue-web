@@ -5,20 +5,23 @@ export type StatsOverview = {
   totalCompleted: number;
   totalInProgress: number;
   totalFavorites: number;
-  movie?: { total: number };
-  series?: { total: number };
-  game?: { total: number };
-  anime?: { total: number };
-  manga?: { total: number };
+  movie?: { total: number; completed?: number; totalUnitsConsumed?: number };
+  series?: { total: number; completed?: number; totalUnitsConsumed?: number };
+  game?: { total: number; completed?: number; totalUnitsConsumed?: number };
+  anime?: { total: number; completed?: number; totalUnitsConsumed?: number };
+  manga?: { total: number; completed?: number; totalUnitsConsumed?: number };
 };
 
 export type StatsTimeSpent = {
   totalHours: number;
-  movieHours?: number;
-  seriesHours?: number;
+  totalMinutes?: number;
+  totalDays?: number;
+  movieMinutes?: number;
+  seriesMinutes?: number;
   gameHours?: number;
-  animeHours?: number;
-  mangaHours?: number;
+  animeMinutes?: number;
+  gamesCompleted?: number;
+  mangaChaptersRead?: number;
 };
 
 export type MediumHours = {

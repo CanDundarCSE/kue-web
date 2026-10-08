@@ -260,11 +260,57 @@ async function loadStatsData(now: number): Promise<StatsPageData> {
   const hoursRaw = hoursResult.status === "fulfilled" ? hoursResult.value : null;
   const parsedMediumHours = parseHoursByMedium(hoursRaw);
 
-  const hoursByMedium: MediumRow[] = ORDERED_MEDIUMS.map((m) => ({
+  let hoursByMedium: MediumRow[] = ORDERED_MEDIUMS.map((m) => ({
     key: m.key,
     label: m.label,
     hours: parsedMediumHours[m.key] || 0,
   }));
+
+  const hasParsedHours = hoursByMedium.some((row) => row.hours > 0);
+  if (!hasParsedHours && timeSpent) {
+    const animeMinutes = Number(timeSpent.animeMinutes ?? 0);
+    const seriesMinutes = Number(timeSpent.seriesMinutes ?? 0);
+    const movieMinutes = Number(timeSpent.movieMinutes ?? 0);
+    const mangaChapters = Number(timeSpent.mangaChaptersRead ?? 0);
+    const gamesCompleted = Number(timeSpent.gamesCompleted ?? 0);
+    const totalHours = Number(timeSpent.totalHours ?? 0);
+
+    let animeHours = Math.round((animeMinutes / 60) * 10) / 10;
+    let seriesHours = Math.round((seriesMinutes / 60) * 10) / 10;
+    let filmHours = Math.round((movieMinutes / 60) * 10) / 10;
+    let mangaHours = Math.round(((mangaChapters * 4) / 60) * 10) / 10;
+
+    const accounted = animeHours + seriesHours + filmHours + mangaHours;
+    let gameHours = Math.max(0, Math.round((totalHours - accounted) * 10) / 10);
+
+    // If totalHours > 0 but game hours is 0 (or only game logged)
+    if (gameHours === 0 && (gamesCompleted > 0 || (totalHours > 0 && accounted === 0))) {
+      const counts: { key: MediumKey; count: number }[] = [
+        { key: "game" as const, count: (overview.game?.total ?? 0) + (overview.game?.completed ?? 0) },
+        { key: "series" as const, count: (overview.series?.total ?? 0) + (overview.series?.completed ?? 0) },
+        { key: "film" as const, count: (overview.movie?.total ?? 0) + (overview.movie?.completed ?? 0) },
+        { key: "anime" as const, count: (overview.anime?.total ?? 0) + (overview.anime?.completed ?? 0) },
+        { key: "manga" as const, count: (overview.manga?.total ?? 0) + (overview.manga?.completed ?? 0) },
+      ].sort((a, b) => b.count - a.count);
+
+      const top = counts[0];
+      if (top && top.count > 0 && totalHours > 0) {
+        if (top.key === "game") gameHours = totalHours;
+        else if (top.key === "series" && seriesHours === 0) seriesHours = totalHours;
+        else if (top.key === "film" && filmHours === 0) filmHours = totalHours;
+        else if (top.key === "anime" && animeHours === 0) animeHours = totalHours;
+        else if (top.key === "manga" && mangaHours === 0) mangaHours = totalHours;
+      }
+    }
+
+    hoursByMedium = [
+      { key: "game", label: "GAME", hours: gameHours },
+      { key: "series", label: "SERIES", hours: seriesHours },
+      { key: "film", label: "FILM", hours: filmHours },
+      { key: "anime", label: "ANIME", hours: animeHours },
+      { key: "manga", label: "MANGA", hours: mangaHours },
+    ];
+  }
 
   const totalCalculatedHours = hoursByMedium.reduce((sum, row) => sum + row.hours, 0);
   const totalHours = timeSpent?.totalHours ?? totalCalculatedHours;
@@ -316,10 +362,25 @@ async function loadStatsData(now: number): Promise<StatsPageData> {
 
   // Derive top medium from hours by medium if not directly in review data
   const topMediumCandidate = [...hoursByMedium].sort((a, b) => b.hours - a.hours)[0];
-  const derivedTopMedium =
+  let derivedTopMedium =
     topMediumCandidate && topMediumCandidate.hours > 0
       ? capitalizeMedium(topMediumCandidate.key)
       : null;
+
+  // Fallback to overview item counts if all hours are 0
+  if (!derivedTopMedium) {
+    const typeCounts = [
+      { name: "Game", count: overview.game?.total ?? 0 },
+      { name: "Series", count: overview.series?.total ?? 0 },
+      { name: "Film", count: overview.movie?.total ?? 0 },
+      { name: "Anime", count: overview.anime?.total ?? 0 },
+      { name: "Manga", count: overview.manga?.total ?? 0 },
+    ].sort((a, b) => b.count - a.count);
+
+    if (typeCounts[0] && typeCounts[0].count > 0) {
+      derivedTopMedium = typeCounts[0].name;
+    }
+  }
 
   const topMedium = reviewRaw?.topMedium ? capitalizeMedium(reviewRaw.topMedium) : derivedTopMedium;
 

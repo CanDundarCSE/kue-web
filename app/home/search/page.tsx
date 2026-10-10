@@ -27,5 +27,8 @@ export default async function SearchPage({
   const rawType = firstString(params.type).trim().toLowerCase();
   const type = MEDIA_TYPES.has(rawType) ? rawType : "";
 
-  return <SearchResults query={query} type={type} />;
+  const rawPage = Number.parseInt(firstString(params.page), 10);
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+
+  return <SearchResults query={query} type={type} page={page} />;
 }

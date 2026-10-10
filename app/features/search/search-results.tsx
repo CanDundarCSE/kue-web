@@ -1,11 +1,12 @@
 "use client";
 
-import { ArrowRight, Loader2, Plus, Search } from "lucide-react";
+import { ArrowRight, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
 import SectionLabel from "@/app/features/home/section-label";
+import SearchPaginator from "@/app/features/search/search-paginator";
 import { fetchSearchPage, mediaKey, type SearchMedia } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
@@ -119,27 +120,53 @@ function ResultRow({
   );
 }
 
-export default function SearchResults({ query, type }: { query: string; type: string }) {
+export default function SearchResults({
+  query,
+  type,
+  page,
+}: {
+  query: string;
+  type: string;
+  page: number;
+}) {
   const router = useRouter();
 
   const [items, setItems] = useState<SearchMedia[]>([]);
   const [totalItems, setTotalItems] = useState<number | null>(null);
-  const [loadedPage, setLoadedPage] = useState(0);
+  const [currentPage, setCurrentPage] = useState(page);
   const [lastPage, setLastPage] = useState(0);
   const [state, setState] = useState<"idle" | "loading" | "ready" | "error">("idle");
-  const [loadingMore, setLoadingMore] = useState(false);
   const requestRef = useRef(0);
 
   const trimmed = query.trim();
 
-  // The URL is the source of truth (top bar, filter pills and back/forward all
-  // land here), so refetch page 1 whenever the query or filter changes.
+  const pushPage = useCallback(
+    (next: number, options?: { replace?: boolean }) => {
+      const params = new URLSearchParams();
+      if (trimmed) params.set("q", trimmed);
+      if (type) params.set("type", type);
+      if (next > 1) params.set("page", String(next));
+
+      const href = `/home/search${params.size ? `?${params.toString()}` : ""}`;
+      if (options?.replace) {
+        router.replace(href);
+      } else {
+        router.push(href);
+      }
+    },
+    [router, trimmed, type],
+  );
+
+  // The URL is the source of truth (top bar, filter pills, pager and
+  // back/forward all land here), so refetch whenever query, filter or page
+  // changes.
   const reload = useCallback(async () => {
     if (!trimmed) {
       // Invalidate any in-flight page loads from the previous query.
       requestRef.current++;
       setItems([]);
       setTotalItems(null);
+      setLastPage(0);
       setState("idle");
       return;
     }
@@ -147,21 +174,30 @@ export default function SearchResults({ query, type }: { query: string; type: st
     const requestId = ++requestRef.current;
     setState("loading");
 
-    const page = await fetchSearchPage(trimmed, type, 1, PAGE_SIZE);
+    const result = await fetchSearchPage(trimmed, type, page, PAGE_SIZE);
     if (requestId !== requestRef.current) return;
 
-    if (!page) {
+    if (!result) {
       setState("error");
       return;
     }
 
-    setItems(page.items);
-    setTotalItems(page.totalItems);
-    setLoadedPage(1);
-    setLastPage(page.totalPages);
+    // An out-of-range page (results shrank, stale bookmark) falls back to the
+    // last page that actually has rows.
+    if (page > result.totalPages && result.totalPages >= 1) {
+      requestRef.current++;
+      setState("idle");
+      pushPage(result.totalPages, { replace: true });
+      return;
+    }
+
+    setItems(result.items);
+    setTotalItems(result.totalItems);
+    setCurrentPage(page);
+    setLastPage(result.totalPages);
     setState("ready");
     window.scrollTo(0, 0);
-  }, [trimmed, type]);
+  }, [trimmed, type, page, pushPage]);
 
   // Deferred like the top-bar dropdown: the reset/loading setState calls must
   // not run synchronously in the effect body.
@@ -172,20 +208,10 @@ export default function SearchResults({ query, type }: { query: string; type: st
     return () => clearTimeout(handle);
   }, [reload]);
 
-  const loadMore = async () => {
-    if (loadingMore || loadedPage >= lastPage) return;
-
-    const requestId = ++requestRef.current;
-    setLoadingMore(true);
-
-    const page = await fetchSearchPage(trimmed, type, loadedPage + 1, PAGE_SIZE);
-
-    setLoadingMore(false);
-    if (requestId !== requestRef.current) return;
-
-    if (!page) return;
-    setItems((prev) => [...prev, ...page.items]);
-    setLoadedPage(loadedPage + 1);
+  const goToPage = (next: number) => {
+    if (state !== "ready" || next === currentPage) return;
+    if (next < 1 || next > lastPage) return;
+    pushPage(next);
   };
 
   const applyFilter = (value: string) => {
@@ -336,35 +362,20 @@ export default function SearchResults({ query, type }: { query: string; type: st
               })}
             </ul>
 
-            <div className="mt-6 flex flex-col items-center gap-2.5">
-              {totalItems !== null && (
+            <div className="mt-6 flex justify-center">
+              {totalItems !== null && totalItems > 0 && (
                 <p className="text-[11px] leading-none text-ink-3">
-                  Showing {items.length} of {totalItems}
+                  Showing {(currentPage - 1) * PAGE_SIZE + 1}–
+                  {(currentPage - 1) * PAGE_SIZE + items.length} of {totalItems}
                 </p>
               )}
-
-              {loadedPage < lastPage && (
-                <button
-                  type="button"
-                  onClick={() => void loadMore()}
-                  disabled={loadingMore}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-md border border-line-2/70 px-4 py-2 text-[11px] font-mono tracking-[0.08em] text-ink-2 uppercase",
-                    "transition-colors duration-150 motion-reduce:transition-none",
-                    "hover:bg-surface-3 hover:text-foreground",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
-                    "disabled:pointer-events-none disabled:opacity-40",
-                  )}
-                >
-                  {loadingMore ? (
-                    <Loader2 className="size-3.5 animate-spin" strokeWidth={2} />
-                  ) : (
-                    <Plus className="size-3.5" strokeWidth={2} />
-                  )}
-                  Load more
-                </button>
-              )}
             </div>
+
+            <SearchPaginator
+              currentPage={currentPage}
+              totalPages={lastPage}
+              onPageChange={goToPage}
+            />
           </>
         )}
       </div>

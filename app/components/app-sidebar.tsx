@@ -8,6 +8,7 @@ import {
   Compass,
   House,
   Menu,
+  NotebookPen,
   TrendingUp,
   User,
   type LucideIcon,
@@ -34,6 +35,7 @@ export const DEFAULT_ITEMS: AppSidebarItem[] = [
    { href: "/home", label: "Home", icon: House },
    { href: "/library", label: "Library", icon: ChartColumn },
    { href: "/discover", label: "Discover", icon: Compass },
+   { href: "/reviews", label: "Reviews", icon: NotebookPen },
    { href: "/stats", label: "Stats", icon: TrendingUp },
    { href: "/profile", label: "Profile", icon: User },
 ];

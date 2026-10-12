@@ -11,6 +11,7 @@ import {
   NotebookPen,
   TrendingUp,
   User,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -36,6 +37,7 @@ export const DEFAULT_ITEMS: AppSidebarItem[] = [
    { href: "/library", label: "Library", icon: ChartColumn },
    { href: "/discover", label: "Discover", icon: Compass },
    { href: "/reviews", label: "Reviews", icon: NotebookPen },
+   { href: "/friends", label: "Friends", icon: Users },
    { href: "/stats", label: "Stats", icon: TrendingUp },
    { href: "/profile", label: "Profile", icon: User },
 ];

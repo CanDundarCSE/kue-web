@@ -1,4 +1,5 @@
 import type { SearchMedia } from "@/lib/search";
+import { invalidateLibraryPresence } from "@/lib/library-presence";
 
 export type TrendingItem = SearchMedia & {
   rank: number;
@@ -71,6 +72,8 @@ export async function addToLibraryFromDiscover(media: SearchMedia): Promise<bool
     body: JSON.stringify(payload),
   }).catch(() => null);
 
-  return !!response && response.ok;
+  const ok = !!response && response.ok;
+  if (ok) invalidateLibraryPresence();
+  return ok;
 }
 

@@ -1,5 +1,6 @@
 import { authFetch } from "@/lib/api/client";
 import type { LibraryEntryDto } from "@/lib/api/library";
+import { invalidateLibraryPresence } from "@/lib/library-presence";
 
 export type MediaDto = {
   id: number;
@@ -190,6 +191,8 @@ export async function addMediaToLibrary(payload: {
   }).catch(() => null);
 
   if (!response || !response.ok) return null;
-  return (await response.json().catch(() => null)) as LibraryEntryDto | null;
+  const entry = (await response.json().catch(() => null)) as LibraryEntryDto | null;
+  if (entry) invalidateLibraryPresence();
+  return entry;
 }
 

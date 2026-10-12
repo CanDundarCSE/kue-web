@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Search } from "lucide-react";
 
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
+import LibraryBadge from "@/app/components/library-badge";
+import { useLibraryPresence } from "@/lib/library-presence";
 import { mediaKey, type SearchMedia } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
@@ -54,6 +56,7 @@ export default function SearchField() {
 
   const trimmed = query.trim();
   const searchable = trimmed.length >= 2;
+  const { isInLibrary } = useLibraryPresence();
 
   // "/" focuses the field from anywhere (unless already typing).
   useEffect(() => {
@@ -289,6 +292,8 @@ export default function SearchField() {
                           </span>
                         </span>
                       </button>
+
+                      {isInLibrary(media) && <LibraryBadge />}
 
                       <button
                         type="button"

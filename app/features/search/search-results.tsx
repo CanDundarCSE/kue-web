@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
+import LibraryBadge from "@/app/components/library-badge";
 import SectionLabel from "@/app/features/home/section-label";
 import SearchPaginator from "@/app/features/search/search-paginator";
+import { useLibraryPresence } from "@/lib/library-presence";
 import { fetchSearchPage, mediaKey, type SearchMedia } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
@@ -68,9 +70,11 @@ function RowSkeleton() {
 
 function ResultRow({
   media,
+  inLibrary,
   onSelect,
 }: {
   media: SearchMedia;
+  inLibrary: boolean;
   onSelect: () => void;
 }) {
   return (
@@ -89,9 +93,12 @@ function ResultRow({
         />
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[14px] leading-tight font-semibold text-foreground group-hover:text-accent transition-colors">
-            {media.title}
-          </p>
+          <div className="flex min-w-0 items-center gap-2">
+            <p className="truncate text-[14px] leading-tight font-semibold text-foreground group-hover:text-accent transition-colors">
+              {media.title}
+            </p>
+            {inLibrary && <LibraryBadge variant="pill" />}
+          </div>
           <p className="mt-1 text-[11px] leading-none text-ink-3">
             <RowMeta media={media} />
           </p>
@@ -130,6 +137,7 @@ export default function SearchResults({
   page: number;
 }) {
   const router = useRouter();
+  const { isInLibrary } = useLibraryPresence();
 
   const [items, setItems] = useState<SearchMedia[]>([]);
   const [totalItems, setTotalItems] = useState<number | null>(null);
@@ -356,6 +364,7 @@ export default function SearchResults({
                   <ResultRow
                     key={rowKey}
                     media={media}
+                    inLibrary={isInLibrary(media)}
                     onSelect={() => goToMedia(media)}
                   />
                 );

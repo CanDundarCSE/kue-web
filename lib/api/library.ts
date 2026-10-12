@@ -11,6 +11,8 @@ export type LibraryMediaDto = {
   unitName?: string | null;
   runtimeMinutes?: number | null;
   platforms?: string[] | null;
+  externalSource?: string | null;
+  externalId?: string | null;
 };
 
 export type LibraryEntryDto = {

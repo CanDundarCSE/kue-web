@@ -195,7 +195,7 @@ function SheetForm({
                   "flex items-center justify-center rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
                   isSelected
                     ? "border-sky-500 bg-sky-50 text-sky-700 font-semibold dark:border-sky-500 dark:bg-sky-500/10 dark:text-sky-300"
-                    : "border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-200",
+                    : "border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-800",
                 )}
               >
                 {opt.label}
@@ -234,7 +234,7 @@ function SheetForm({
                     "flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors",
                     isSelected
                       ? "border-sky-500 bg-sky-50 text-sky-700 font-semibold dark:border-sky-500 dark:bg-sky-500/10 dark:text-sky-300"
-                      : "border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-200",
+                      : "border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-800",
                   )}
                 >
                   <Gamepad2 className="size-3.5 shrink-0 opacity-70" />

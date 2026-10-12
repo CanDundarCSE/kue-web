@@ -16,6 +16,14 @@ export type SearchPage = {
   totalPages: number;
 };
 
+export type SearchSort = "newest" | "oldest" | "highest" | "lowest";
+
+export type SearchOptions = {
+  sort?: SearchSort | null;
+  year?: number | null;
+  minScore?: number | null;
+};
+
 // Catalog results are not persisted yet, so every item reports id 0 and is
 // actually identified by its external source/id pair. Fall back to the row
 // index only if a result somehow carries neither.
@@ -27,13 +35,22 @@ export function mediaKey(media: SearchMedia, index: number): string {
   return `row:${index}`;
 }
 
-export function buildSearchUrl(query: string, type: string, page: number, pageSize: number) {
+export function buildSearchUrl(
+  query: string,
+  type: string,
+  page: number,
+  pageSize: number,
+  options?: SearchOptions,
+) {
   const params = new URLSearchParams({
     q: query,
     page: String(page),
     pageSize: String(pageSize),
   });
   if (type) params.set("type", type);
+  if (options?.sort) params.set("sort", options.sort);
+  if (options?.year) params.set("year", String(options.year));
+  if (options?.minScore) params.set("minScore", String(options.minScore));
   return `/api/search?${params.toString()}`;
 }
 
@@ -42,8 +59,9 @@ export async function fetchSearchPage(
   type: string,
   page: number,
   pageSize: number,
+  options?: SearchOptions,
 ): Promise<SearchPage | null> {
-  const response = await fetch(buildSearchUrl(query, type, page, pageSize), {
+  const response = await fetch(buildSearchUrl(query, type, page, pageSize, options), {
     cache: "no-store",
   }).catch(() => null);
 

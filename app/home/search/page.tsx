@@ -10,6 +10,7 @@ export const metadata: Metadata = {
 };
 
 const MEDIA_TYPES = new Set(["movie", "series", "game", "anime", "manga"]);
+const SORTS = new Set(["newest", "oldest", "highest", "lowest"]);
 
 function firstString(value: string | string[] | undefined) {
   const single = Array.isArray(value) ? value[0] : value;
@@ -30,5 +31,18 @@ export default async function SearchPage({
   const rawPage = Number.parseInt(firstString(params.page), 10);
   const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
 
-  return <SearchResults query={query} type={type} page={page} />;
+  const rawSort = firstString(params.sort).trim().toLowerCase();
+  const sort = SORTS.has(rawSort) ? rawSort : "";
+
+  const rawYear = Number.parseInt(firstString(params.year), 10);
+  const year =
+    Number.isInteger(rawYear) && rawYear >= 1800 && rawYear <= 2100 ? rawYear : null;
+
+  const rawMinScore = Number(firstString(params.minScore));
+  const minScore =
+    Number.isFinite(rawMinScore) && rawMinScore >= 0 && rawMinScore <= 10
+      ? rawMinScore
+      : null;
+
+  return <SearchResults query={query} type={type} page={page} sort={sort} year={year} minScore={minScore} />;
 }

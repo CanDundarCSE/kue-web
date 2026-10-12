@@ -9,7 +9,7 @@ import LibraryBadge from "@/app/components/library-badge";
 import SectionLabel from "@/app/features/home/section-label";
 import SearchPaginator from "@/app/features/search/search-paginator";
 import { useLibraryPresence } from "@/lib/library-presence";
-import { fetchSearchPage, mediaKey, type SearchMedia } from "@/lib/search";
+import { fetchSearchPage, mediaKey, type SearchMedia, type SearchSort } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 24;
@@ -42,6 +42,22 @@ const FILTERS: { value: string; label: string }[] = [
   { value: "game", label: "Games" },
   { value: "anime", label: "Anime" },
   { value: "manga", label: "Manga" },
+];
+
+const SORTS: { value: string; label: string }[] = [
+  { value: "", label: "Relevance" },
+  { value: "newest", label: "Newest" },
+  { value: "oldest", label: "Oldest" },
+  { value: "highest", label: "Top rated" },
+  { value: "lowest", label: "Lowest rated" },
+];
+
+const SCORE_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "Any score" },
+  { value: "6", label: "6+" },
+  { value: "7", label: "7+" },
+  { value: "8", label: "8+" },
+  { value: "9", label: "9+" },
 ];
 
 function RowMeta({ media }: { media: SearchMedia }) {
@@ -140,10 +156,16 @@ export default function SearchResults({
   query,
   type,
   page,
+  sort,
+  year,
+  minScore,
 }: {
   query: string;
   type: string;
   page: number;
+  sort: string;
+  year: number | null;
+  minScore: number | null;
 }) {
   const router = useRouter();
   const { isInLibrary } = useLibraryPresence();
@@ -156,13 +178,25 @@ export default function SearchResults({
   const requestRef = useRef(0);
 
   const trimmed = query.trim();
+  const hasRefinements = sort !== "" || year !== null || minScore !== null;
 
-  const pushPage = useCallback(
-    (next: number, options?: { replace?: boolean }) => {
+  const pushState = useCallback(
+    (
+      next: { type?: string; sort?: string; year?: number | null; minScore?: number | null; page?: number },
+      options?: { replace?: boolean },
+    ) => {
       const params = new URLSearchParams();
       if (trimmed) params.set("q", trimmed);
-      if (type) params.set("type", type);
-      if (next > 1) params.set("page", String(next));
+      const nextType = next.type ?? type;
+      if (nextType) params.set("type", nextType);
+      const nextSort = next.sort ?? sort;
+      if (nextSort) params.set("sort", nextSort);
+      const nextYear = next.year !== undefined ? next.year : year;
+      if (nextYear !== null) params.set("year", String(nextYear));
+      const nextScore = next.minScore !== undefined ? next.minScore : minScore;
+      if (nextScore !== null) params.set("minScore", String(nextScore));
+      const nextPage = next.page ?? 1;
+      if (nextPage > 1) params.set("page", String(nextPage));
 
       const href = `/home/search${params.size ? `?${params.toString()}` : ""}`;
       if (options?.replace) {
@@ -171,7 +205,14 @@ export default function SearchResults({
         router.push(href);
       }
     },
-    [router, trimmed, type],
+    [router, trimmed, type, sort, year, minScore],
+  );
+
+  const pushPage = useCallback(
+    (next: number, options?: { replace?: boolean }) => {
+      pushState({ page: next }, options);
+    },
+    [pushState],
   );
 
   // The URL is the source of truth (top bar, filter pills, pager and
@@ -191,7 +232,11 @@ export default function SearchResults({
     const requestId = ++requestRef.current;
     setState("loading");
 
-    const result = await fetchSearchPage(trimmed, type, page, PAGE_SIZE);
+    const result = await fetchSearchPage(trimmed, type, page, PAGE_SIZE, {
+      sort: (sort as SearchSort) || null,
+      year,
+      minScore,
+    });
     if (requestId !== requestRef.current) return;
 
     if (!result) {
@@ -214,7 +259,7 @@ export default function SearchResults({
     setLastPage(result.totalPages);
     setState("ready");
     window.scrollTo(0, 0);
-  }, [trimmed, type, page, pushPage]);
+  }, [trimmed, type, page, sort, year, minScore, pushPage]);
 
   // Deferred like the top-bar dropdown: the reset/loading setState calls must
   // not run synchronously in the effect body.
@@ -233,11 +278,27 @@ export default function SearchResults({
 
   const applyFilter = (value: string) => {
     if (value === type) return;
+    pushState({ type: value, page: 1 });
+  };
 
-    const params = new URLSearchParams();
-    if (trimmed) params.set("q", trimmed);
-    if (value) params.set("type", value);
-    router.push(`/home/search?${params.toString()}`);
+  const applySort = (value: string) => {
+    if (value === sort) return;
+    pushState({ sort: value, page: 1 });
+  };
+
+  const applyYear = (value: number | null) => {
+    if (value === year) return;
+    pushState({ year: value, page: 1 });
+  };
+
+  const applyMinScore = (value: number | null) => {
+    if (value === minScore) return;
+    pushState({ minScore: value, page: 1 });
+  };
+
+  const clearRefinements = () => {
+    if (!hasRefinements && !type) return;
+    pushState({ type: "", sort: "", year: null, minScore: null, page: 1 });
   };
 
   const goToMedia = (media: SearchMedia) => {
@@ -309,6 +370,103 @@ export default function SearchResults({
             </button>
           );
         })}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        <div role="group" aria-label="Sort results" className="flex flex-wrap items-center gap-1.5">
+          {SORTS.map((option) => {
+            const active = option.value === sort;
+            return (
+              <button
+                key={option.value || "relevance"}
+                type="button"
+                aria-pressed={active}
+                onClick={() => applySort(option.value)}
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-[11px] font-mono tracking-[0.08em] uppercase",
+                  "transition-colors duration-150 motion-reduce:transition-none",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+                  active
+                    ? "border-accent/60 bg-accent/10 text-accent"
+                    : "border-line-2/70 text-ink-2 hover:bg-surface-3 hover:text-foreground",
+                )}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <input
+          key={year === null ? "year-any" : `year-${year}`}
+          type="number"
+          defaultValue={year ?? ""}
+          min={1800}
+          max={2100}
+          placeholder="Year"
+          aria-label="Filter by release year"
+          onBlur={(event) => {
+            const value = Number.parseInt(event.target.value, 10);
+            applyYear(Number.isInteger(value) && value >= 1800 && value <= 2100 ? value : null);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              event.currentTarget.blur();
+            } else if (event.key === "Escape") {
+              event.currentTarget.blur();
+            }
+          }}
+          className={cn(
+            "h-[34px] w-24 rounded-full border border-line-2/70 bg-transparent px-3",
+            "font-mono text-[11px] tracking-[0.08em] text-ink-2 placeholder:text-ink-3",
+            "transition-colors duration-150 motion-reduce:transition-none",
+            "hover:border-line-2 hover:text-foreground",
+            "focus:border-accent focus:ring-2 focus:ring-accent/30 focus:outline-none focus:text-foreground",
+            "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+            year !== null && "border-accent/60 bg-accent/10 text-accent",
+          )}
+        />
+
+        <select
+          value={minScore === null ? "" : String(minScore)}
+          onChange={(event) => {
+            const value = Number(event.target.value);
+            applyMinScore(event.target.value === "" ? null : value);
+          }}
+          aria-label="Filter by minimum score"
+          className={cn(
+            "h-[34px] w-28 cursor-pointer appearance-none rounded-full border border-line-2/70 bg-transparent pr-3 pl-3",
+            "text-center font-mono text-[11px] tracking-[0.08em] uppercase",
+            "transition-colors duration-150 motion-reduce:transition-none",
+            "hover:bg-surface-3",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+            minScore !== null
+              ? "border-accent/60 bg-accent/10 text-accent"
+              : "text-ink-2 hover:text-foreground",
+          )}
+        >
+          {SCORE_OPTIONS.map((option) => (
+            <option key={option.value || "any"} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+
+        {(hasRefinements || type) && (
+          <button
+            type="button"
+            onClick={clearRefinements}
+            className={cn(
+              "rounded-full px-3 py-1.5 font-mono text-[11px] tracking-[0.08em] text-ink-3 uppercase",
+              "transition-colors duration-150 motion-reduce:transition-none",
+              "hover:text-foreground",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+            )}
+          >
+            Clear
+          </button>
+        )}
       </div>
 
       <div className="mt-5">

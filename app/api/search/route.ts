@@ -2,6 +2,7 @@ import { API_BASE_URL } from "@/lib/api/backend";
 import { NO_STORE } from "@/lib/api/auth";
 
 const MEDIA_TYPES = new Set(["movie", "series", "game", "anime", "manga"]);
+const SORTS = new Set(["newest", "oldest", "highest", "lowest"]);
 
 // The top-bar dropdown uses the default small page (8 results); the search
 // page passes its own page/pageSize for the full result set.
@@ -26,6 +27,14 @@ export async function GET(request: Request) {
   const params = new URLSearchParams({ query, page: String(page), pageSize: String(pageSize) });
   const type = url.searchParams.get("type")?.trim();
   if (type && MEDIA_TYPES.has(type)) params.set("type", type);
+  const sort = url.searchParams.get("sort")?.trim().toLowerCase();
+  if (sort && SORTS.has(sort)) params.set("sort", sort);
+  const year = Number(url.searchParams.get("year"));
+  if (Number.isInteger(year) && year >= 1800 && year <= 2100) params.set("year", String(year));
+  const minScore = Number(url.searchParams.get("minScore"));
+  if (Number.isFinite(minScore) && minScore >= 0 && minScore <= 10) {
+    params.set("minScore", String(minScore));
+  }
 
   let upstream: Response;
   try {

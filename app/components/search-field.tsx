@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Search } from "lucide-react";
+import { ArrowRight, Search, Star } from "lucide-react";
 
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
 import LibraryBadge from "@/app/components/library-badge";
@@ -35,10 +35,19 @@ function ResultMeta({ media }: { media: SearchMedia }) {
   const parts = [
     media.year !== null ? String(media.year) : null,
     mediaTypeLabel(media.mediaType),
-    media.score !== null ? `${media.score}` : null,
   ].filter(Boolean);
 
-  return <>{parts.join(" · ")}</>;
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className="truncate">{parts.join(" · ")}</span>
+      {media.score !== null && (
+        <span className="inline-flex shrink-0 items-center gap-0.5 font-semibold text-accent">
+          <Star className="size-2.5 fill-current" aria-hidden="true" />
+          {media.score}
+        </span>
+      )}
+    </span>
+  );
 }
 
 export default function SearchField() {

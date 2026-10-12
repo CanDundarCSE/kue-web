@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogIn, LogOut } from "lucide-react";
+import { LogIn, LogOut, Settings } from "lucide-react";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/app/components/ui/popover";
 import { initialOf, type CurrentUser } from "@/lib/current-user";
@@ -25,7 +25,13 @@ export default function UserAccountMenu({
   loading: boolean;
 }) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+
+  const goToSettings = () => {
+    setOpen(false);
+    router.push("/settings");
+  };
 
   const handleSignOut = async () => {
     if (signingOut) return;
@@ -42,7 +48,7 @@ export default function UserAccountMenu({
   };
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -81,6 +87,10 @@ export default function UserAccountMenu({
               </div>
             </div>
             <div className="h-px bg-line" aria-hidden />
+            <button type="button" onClick={goToSettings} className={rowClasses}>
+              <Settings className="size-4 shrink-0" strokeWidth={1.75} />
+              Settings
+            </button>
             <button
               type="button"
               onClick={handleSignOut}

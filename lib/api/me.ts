@@ -7,6 +7,7 @@ import { emitSessionSync } from "@/lib/session-sync";
 // uses: the provider picks it up without a separate /api/auth/me round-trip.
 export async function updateMe(payload: {
   username?: string;
+  email?: string;
   bio?: string | null;
   isPrivate?: boolean;
 }): Promise<CurrentUser | null> {
@@ -26,4 +27,21 @@ export async function updateMe(payload: {
 
   emitSessionSync(data);
   return data;
+}
+
+export async function changePassword(payload: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<string | null> {
+  const response = await authFetch("/api/auth/change-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    cache: "no-store",
+  }).catch(() => null);
+
+  if (!response) return "Couldn't reach the server.";
+  if (response.ok) return null;
+
+  return readApiError(response, "Couldn't change the password.");
 }

@@ -64,11 +64,6 @@ export default function ProfileHeader() {
   const [bioSaving, setBioSaving] = useState(false);
   const [bioError, setBioError] = useState<string | null>(null);
 
-  const [isEditingUsername, setIsEditingUsername] = useState(false);
-  const [usernameInput, setUsernameInput] = useState("");
-  const [usernameSaving, setUsernameSaving] = useState(false);
-  const [usernameError, setUsernameError] = useState<string | null>(null);
-
   const [copiedKueId, setCopiedKueId] = useState(false);
 
   useEffect(() => {
@@ -115,45 +110,6 @@ export default function ProfileHeader() {
     }
   };
 
-  const handleStartEditingUsername = () => {
-    setUsernameInput(user?.username ?? "");
-    setUsernameError(null);
-    setIsEditingUsername(true);
-  };
-
-  const handleCancelEditingUsername = () => {
-    setIsEditingUsername(false);
-    setUsernameInput("");
-    setUsernameError(null);
-  };
-
-  const handleSaveUsername = async () => {
-    if (usernameSaving) return;
-    const trimmed = usernameInput.trim();
-    if (trimmed.length < 3 || trimmed.length > 50) {
-      setUsernameError("Username must be between 3 and 50 characters.");
-      return;
-    }
-    if (trimmed === user?.username) {
-      setIsEditingUsername(false);
-      return;
-    }
-
-    setUsernameSaving(true);
-    setUsernameError(null);
-
-    try {
-      // Session sync pushes the updated user into context: heading, avatar
-      // initial and everything else update without a reload.
-      await updateMe({ username: trimmed });
-      setIsEditingUsername(false);
-    } catch (err: unknown) {
-      setUsernameError(err instanceof Error ? err.message : "Failed to update username.");
-    } finally {
-      setUsernameSaving(false);
-    }
-  };
-
   const handleCopyKueId = async () => {
     if (!user?.kueId) return;
     try {
@@ -190,78 +146,9 @@ export default function ProfileHeader() {
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            {isEditingUsername ? (
-              <div className="min-w-0 flex-1">
-                <div className="flex max-w-md items-center gap-2">
-                  <input
-                    value={usernameInput}
-                    onChange={(e) => setUsernameInput(e.target.value)}
-                    maxLength={50}
-                    placeholder="Username"
-                    aria-label="Username"
-                    autoFocus
-                    disabled={usernameSaving}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        void handleSaveUsername();
-                      } else if (e.key === "Escape") {
-                        e.preventDefault();
-                        handleCancelEditingUsername();
-                      }
-                    }}
-                    className={cn(
-                      "h-9 min-w-0 flex-1 rounded-lg border border-line-2/70 bg-background px-3 font-serif text-[20px] text-foreground placeholder:text-ink-3",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
-                    )}
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => void handleSaveUsername()}
-                    disabled={usernameSaving}
-                  >
-                    {usernameSaving ? (
-                      <Loader2 className="size-3.5 animate-spin" />
-                    ) : (
-                      <Check className="size-3.5" />
-                    )}
-                    <span className="sr-only">Save username</span>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCancelEditingUsername}
-                    disabled={usernameSaving}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-                {usernameError && (
-                  <p className="mt-1.5 text-[12px] text-red-500">{usernameError}</p>
-                )}
-              </div>
-            ) : (
-              <>
-                <h1 className="min-w-0 truncate font-serif text-[clamp(24px,3.5vw,36px)] leading-[1.05] tracking-[-0.01em] text-foreground">
-                  {user.username}
-                </h1>
-                <button
-                  type="button"
-                  onClick={handleStartEditingUsername}
-                  title="Change username"
-                  aria-label="Change username"
-                  className={cn(
-                    "grid size-7 shrink-0 place-items-center rounded-md text-ink-3",
-                    "transition-colors hover:bg-surface-3 hover:text-foreground",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
-                  )}
-                >
-                  <Pencil className="size-3.5" />
-                </button>
-              </>
-            )}
+            <h1 className="min-w-0 truncate font-serif text-[clamp(24px,3.5vw,36px)] leading-[1.05] tracking-[-0.01em] text-foreground">
+              {user.username}
+            </h1>
 
             {user.isPrivate && (
               <span

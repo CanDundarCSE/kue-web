@@ -379,9 +379,10 @@ export default function DiscoverView({ initialQuery = "" }: { initialQuery?: str
       <div className="mt-8 grid gap-4 lg:grid-cols-[1fr_420px]">
         {/* ── Left — top-rated ──────────────────────────────────── */}
         <div>
-          <SectionLabel>Top rated media</SectionLabel>
-
-          <div className="mt-4 rounded-xl border border-line bg-surface-2/40">
+          <div className="rounded-xl border border-line bg-surface-2/40 overflow-hidden">
+            <div className="border-b border-line px-4 py-3">
+              <SectionLabel>Top rated media</SectionLabel>
+            </div>
             {topRatedState === "loading" && (
               <ul>
                 {Array.from({ length: 5 }).map((_, i) => (

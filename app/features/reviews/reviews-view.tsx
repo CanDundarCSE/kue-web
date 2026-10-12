@@ -270,7 +270,7 @@ function ReviewCard({
             <RatingScale value={review.rating ?? null} />
           </header>
 
-          <p className="mt-4 font-serif text-[15px] leading-relaxed text-foreground">
+          <p className="mt-4 font-sans text-[15px] leading-relaxed text-foreground">
             <SpoilerText
               content={review.content}
               spoilers={review.spoilers ?? []}
@@ -477,8 +477,6 @@ export default function ReviewsView() {
     [reviews],
   );
 
-  const totalReviews = totals?.all ?? 0;
-
   const applyFilter = (value: Filter) => {
     if (value === filter) return;
     setFilter(value);
@@ -661,11 +659,6 @@ export default function ReviewsView() {
           </h2>
           {data !== null && (
             <span aria-hidden="true" className="h-px w-24 bg-line sm:w-40" />
-          )}
-          {data !== null && (
-            <span className="font-mono text-[11px] tabular-nums text-ink-3">
-              {totalReviews}
-            </span>
           )}
         </div>
 

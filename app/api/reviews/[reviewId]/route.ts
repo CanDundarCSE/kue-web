@@ -1,4 +1,4 @@
-import { buildReviewPayload } from "@/lib/api/reviews";
+import { buildReviewPayload, toSpoilerRanges } from "@/lib/api/reviews";
 import { fetchProtected } from "@/lib/api/protected";
 
 // Update one of the signed-in user's own reviews.
@@ -19,6 +19,7 @@ export async function PUT(
     content: typeof body?.content === "string" ? body.content : "",
     rating: typeof body?.rating === "number" ? body.rating : null,
     containsSpoilers: body?.containsSpoilers === true,
+    spoilers: toSpoilerRanges(body?.spoilers),
     isPublic: body?.isPublic !== false,
   });
 

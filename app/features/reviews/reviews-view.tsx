@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
+import SpoilerText from "@/app/components/spoiler-text";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import type { PickerMedia } from "@/app/features/reviews/library-media-picker";
 import ReviewComposer, {
@@ -20,6 +21,7 @@ import {
   updateReview,
   type ReviewDto,
   type ReviewPage,
+  type SpoilerRange,
 } from "@/lib/api/reviews";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
@@ -207,6 +209,7 @@ function ReviewCard({
   onSubmitEdit: (input: {
     content: string;
     rating: number | null;
+    spoilers: SpoilerRange[];
     isPublic: boolean;
   }) => void;
   onDelete: () => void;
@@ -224,6 +227,7 @@ function ReviewCard({
           initialContent={review.content}
           initialRating={review.rating ?? null}
           initialIsPublic={review.isPublic}
+          initialSpoilers={review.spoilers ?? []}
           reviewedMediaIds={new Set()}
           busy={busy}
           error={editError ?? null}
@@ -233,6 +237,7 @@ function ReviewCard({
             onSubmitEdit({
               content: input.content,
               rating: input.rating,
+              spoilers: input.spoilers,
               isPublic: input.isPublic,
             });
           }}
@@ -266,8 +271,17 @@ function ReviewCard({
           </header>
 
           <p className="mt-4 font-serif text-[15px] leading-relaxed text-foreground">
-            {review.content}
+            <SpoilerText
+              content={review.content}
+              spoilers={review.spoilers ?? []}
+              maskAll={review.containsSpoilers && (review.spoilers?.length ?? 0) === 0}
+            />
           </p>
+          {review.containsSpoilers && (
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 font-mono text-[10px] tracking-[0.08em] text-accent uppercase">
+              Contains spoilers
+            </p>
+          )}
 
           <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[10px] tracking-[0.12em] text-ink-3 uppercase">
             <span>Written {formatDate(review.createdAt)}</span>
@@ -476,6 +490,7 @@ export default function ReviewsView() {
     media: PickerMedia | null;
     content: string;
     rating: number | null;
+    spoilers: SpoilerRange[];
     isPublic: boolean;
   }) => {
     if (!input.media || busy) return;
@@ -486,7 +501,8 @@ export default function ReviewsView() {
     const { review, error: message } = await createReview(input.media.mediaId, {
       content: input.content,
       rating: input.rating,
-      containsSpoilers: false,
+      containsSpoilers: input.spoilers.length > 0,
+      spoilers: input.spoilers,
       isPublic: input.isPublic,
     });
 
@@ -506,7 +522,7 @@ export default function ReviewsView() {
 
   const handleUpdate = async (
     reviewId: number,
-    input: { content: string; rating: number | null; isPublic: boolean },
+    input: { content: string; rating: number | null; spoilers: SpoilerRange[]; isPublic: boolean },
   ) => {
     setBusyReviewId(reviewId);
     setEditError(null);
@@ -514,7 +530,8 @@ export default function ReviewsView() {
     const { review, error: message } = await updateReview(reviewId, {
       content: input.content,
       rating: input.rating,
-      containsSpoilers: false,
+      containsSpoilers: input.spoilers.length > 0,
+      spoilers: input.spoilers,
       isPublic: input.isPublic,
     });
 
@@ -555,6 +572,7 @@ export default function ReviewsView() {
       content: previous.content,
       rating: previous.rating ?? null,
       containsSpoilers: previous.containsSpoilers,
+      spoilers: previous.spoilers ?? [],
       isPublic: next,
     });
 

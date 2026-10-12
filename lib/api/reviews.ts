@@ -1,6 +1,14 @@
 import { authFetch, readApiError } from "@/lib/api/client";
+import {
+  rebaseSpoilersForTrim,
+  toSpoilerRanges,
+  type SpoilerRange,
+} from "@/lib/spoilers";
 
 export const REVIEW_MAX_LENGTH = 255;
+
+export type { SpoilerRange };
+export { toSpoilerRanges };
 
 export type ReviewDto = {
   id: number;
@@ -14,6 +22,7 @@ export type ReviewDto = {
   content: string;
   rating?: number | null;
   containsSpoilers: boolean;
+  spoilers?: SpoilerRange[] | null;
   isPublic: boolean;
   createdAt: string;
   updatedAt?: string | null;
@@ -31,6 +40,7 @@ export type ReviewPayload = {
   content: string;
   rating: number | null;
   containsSpoilers: boolean;
+  spoilers: SpoilerRange[];
   isPublic: boolean;
 };
 
@@ -44,6 +54,7 @@ export function buildReviewPayload(input: {
   content: string;
   rating?: number | null;
   containsSpoilers?: boolean;
+  spoilers?: readonly SpoilerRange[] | null;
   isPublic?: boolean;
 }): ReviewPayload {
   const content = input.content.trim();
@@ -51,11 +62,13 @@ export function buildReviewPayload(input: {
     typeof input.rating === "number" && input.rating >= 1 && input.rating <= 10
       ? Math.round(input.rating)
       : null;
+  const spoilers = rebaseSpoilersForTrim(input.content, input.spoilers ?? []);
 
   return {
     content,
     rating,
-    containsSpoilers: input.containsSpoilers === true,
+    containsSpoilers: input.containsSpoilers === true || spoilers.length > 0,
+    spoilers,
     isPublic: input.isPublic !== false,
   };
 }

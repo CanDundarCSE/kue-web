@@ -1,4 +1,4 @@
-import { buildReviewPayload } from "@/lib/api/reviews";
+import { buildReviewPayload, toSpoilerRanges } from "@/lib/api/reviews";
 import { fetchProtected } from "@/lib/api/protected";
 
 // Reviews written by the signed-in user. `isPublic` filters by visibility.
@@ -27,6 +27,7 @@ export async function POST(request: Request) {
     content: typeof body?.content === "string" ? body.content : "",
     rating: typeof body?.rating === "number" ? body.rating : null,
     containsSpoilers: body?.containsSpoilers === true,
+    spoilers: toSpoilerRanges(body?.spoilers),
     isPublic: body?.isPublic !== false,
   });
 

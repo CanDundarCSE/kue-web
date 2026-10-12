@@ -4,8 +4,14 @@ import { EyeOff, Eye, Loader2, Save, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
+import SpoilerText from "@/app/components/spoiler-text";
 import LibraryMediaPicker, { type PickerMedia } from "@/app/features/reviews/library-media-picker";
 import { REVIEW_MAX_LENGTH } from "@/lib/api/reviews";
+import {
+  normalizeSpoilerRanges,
+  rebaseSpoilersForTrim,
+  type SpoilerRange,
+} from "@/lib/spoilers";
 import { cn } from "@/lib/utils";
 
 function CharacterCount({ value }: { value: string }) {
@@ -146,6 +152,7 @@ export default function ReviewComposer({
   initialContent,
   initialRating,
   initialIsPublic,
+  initialSpoilers,
   reviewedMediaIds,
   busy,
   error,
@@ -157,6 +164,7 @@ export default function ReviewComposer({
   /** Stored 1-10 rating. */
   initialRating: number | null;
   initialIsPublic: boolean;
+  initialSpoilers?: readonly SpoilerRange[] | null;
   reviewedMediaIds: Set<number>;
   busy: boolean;
   error: string | null;
@@ -164,6 +172,7 @@ export default function ReviewComposer({
     media: PickerMedia | null;
     content: string;
     rating: number | null;
+    spoilers: SpoilerRange[];
     isPublic: boolean;
   }) => void;
   onCancel: () => void;
@@ -173,6 +182,9 @@ export default function ReviewComposer({
   const [content, setContent] = useState(initialContent);
   const [rating, setRating] = useState<number | null>(normalizeRating(initialRating));
   const [isPublic, setIsPublic] = useState(initialIsPublic);
+  const [spoilers, setSpoilers] = useState<SpoilerRange[]>(() =>
+    normalizeSpoilerRanges(initialSpoilers ?? [], initialContent.length),
+  );
   const [touched, setTouched] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // Tracks whether the user has set the rating themselves, so the library
@@ -200,7 +212,25 @@ export default function ReviewComposer({
   const submit = () => {
     setTouched(true);
     if (invalid || busy) return;
-    onSubmit({ media, content: trimmed, rating: normalizeRating(rating), isPublic });
+    // Raw content goes out: the payload builder trims and rebases the
+    // spoiler offsets onto the stored text.
+    onSubmit({ media, content, rating: normalizeRating(rating), spoilers, isPublic });
+  };
+
+  const markSelectionAsSpoiler = () => {
+    const node = textareaRef.current;
+    if (!node) return;
+    const start = node.selectionStart ?? 0;
+    const end = node.selectionEnd ?? 0;
+    if (end <= start) return;
+    setSpoilers((prev) =>
+      normalizeSpoilerRanges([...prev, { start, end }], content.length),
+    );
+    node.focus();
+  };
+
+  const removeSpoiler = (index: number) => {
+    setSpoilers((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -305,6 +335,71 @@ export default function ReviewComposer({
           <p className="mt-2 text-[12px] text-[#C4533C] dark:text-[#D9705A]">
             Write something before saving.
           </p>
+        )}
+      </div>
+
+      <div className="mt-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={markSelectionAsSpoiler}
+            title="Mask the selected text as a spoiler"
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-md border border-line-2/70 px-2.5 py-1.5 font-mono text-[10px] tracking-[0.12em] text-ink-2 uppercase",
+              "transition-colors duration-150 motion-reduce:transition-none",
+              "hover:bg-surface-3 hover:text-foreground",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+            )}
+          >
+            <EyeOff className="size-3" strokeWidth={2} aria-hidden="true" />
+            Mark spoiler
+          </button>
+          <span className="text-[11px] text-ink-3">
+            Select text above, then mark it — readers will see it blurred until
+            they tap it.
+          </span>
+        </div>
+
+        {spoilers.length > 0 && (
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5" aria-label="Masked spoilers">
+            {spoilers.map((span, index) => {
+              const excerpt = content.slice(span.start, span.end);
+              const label =
+                excerpt.length > 24 ? `${excerpt.slice(0, 24)}…` : excerpt || "Empty selection";
+              return (
+                <span
+                  key={`${span.start}:${span.end}:${index}`}
+                  className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 py-0.5 pr-1 pl-2.5 font-mono text-[10px] tracking-wide text-accent"
+                >
+                  <span className="max-w-40 truncate">{label}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeSpoiler(index)}
+                    aria-label={`Unmask spoiler ${index + 1}: ${label}`}
+                    className={cn(
+                      "grid size-4 shrink-0 place-items-center rounded-full",
+                      "transition-colors hover:bg-accent/20",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+                    )}
+                  >
+                    <X className="size-2.5" strokeWidth={2.5} aria-hidden="true" />
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+        )}
+
+        {spoilers.length > 0 && trimmed && (
+          <div className="mt-2.5 rounded-lg border border-dashed border-line-2 px-3 py-2.5">
+            <p className={cn(fieldLabel, "mb-1.5")}>Preview</p>
+            <div className="font-serif text-[15px] leading-relaxed text-foreground">
+              <SpoilerText
+                content={trimmed}
+                spoilers={rebaseSpoilersForTrim(content, spoilers)}
+              />
+            </div>
+          </div>
         )}
       </div>
 

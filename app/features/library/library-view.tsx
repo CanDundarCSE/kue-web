@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Search, Upload } from "lucide-react";
 import Link from "next/link";
 import MediaLibraryRow, { LIBRARY_GRID_LAYOUT } from "@/app/components/media-library-row";
 import { type MediaType } from "@/app/components/media-avatar-card";
@@ -512,7 +512,15 @@ export default function LibraryView() {
         </div>
 
         {/* Sort Dropdown */}
-        <div className="relative" ref={sortRef}>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/import"
+            className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3.5 py-1.5 font-mono text-[11px] tracking-[0.08em] uppercase text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-900 transition-colors"
+          >
+            <Upload className="size-3.5 text-zinc-400" />
+            <span>Import</span>
+          </Link>
+          <div className="relative" ref={sortRef}>
           <button
             type="button"
             onClick={() => setIsSortOpen((v) => !v)}
@@ -545,6 +553,7 @@ export default function LibraryView() {
               ))}
             </div>
           )}
+          </div>
         </div>
       </div>
 

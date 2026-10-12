@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Loader2, Lock, Pencil, Plus } from "lucide-react";
+import { Check, Copy, Loader2, Lock, Pencil, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/app/components/ui/button";
@@ -64,6 +64,13 @@ export default function ProfileHeader() {
   const [bioSaving, setBioSaving] = useState(false);
   const [bioError, setBioError] = useState<string | null>(null);
 
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [usernameInput, setUsernameInput] = useState("");
+  const [usernameSaving, setUsernameSaving] = useState(false);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+
+  const [copiedKueId, setCopiedKueId] = useState(false);
+
   useEffect(() => {
     if (loading || user === null) return;
 
@@ -108,6 +115,56 @@ export default function ProfileHeader() {
     }
   };
 
+  const handleStartEditingUsername = () => {
+    setUsernameInput(user?.username ?? "");
+    setUsernameError(null);
+    setIsEditingUsername(true);
+  };
+
+  const handleCancelEditingUsername = () => {
+    setIsEditingUsername(false);
+    setUsernameInput("");
+    setUsernameError(null);
+  };
+
+  const handleSaveUsername = async () => {
+    if (usernameSaving) return;
+    const trimmed = usernameInput.trim();
+    if (trimmed.length < 3 || trimmed.length > 50) {
+      setUsernameError("Username must be between 3 and 50 characters.");
+      return;
+    }
+    if (trimmed === user?.username) {
+      setIsEditingUsername(false);
+      return;
+    }
+
+    setUsernameSaving(true);
+    setUsernameError(null);
+
+    try {
+      // Session sync pushes the updated user into context: heading, avatar
+      // initial and everything else update without a reload.
+      await updateMe({ username: trimmed });
+      setIsEditingUsername(false);
+    } catch (err: unknown) {
+      setUsernameError(err instanceof Error ? err.message : "Failed to update username.");
+    } finally {
+      setUsernameSaving(false);
+    }
+  };
+
+  const handleCopyKueId = async () => {
+    if (!user?.kueId) return;
+    try {
+      await navigator.clipboard?.writeText(user.kueId);
+      setCopiedKueId(true);
+      setTimeout(() => setCopiedKueId(false), 2000);
+    } catch {
+      // Clipboard unavailable: the ID stays visible for manual copying.
+    }
+  };
+
   if (loading || user === null) {
     return <ProfileHeaderSkeleton />;
   }
@@ -133,9 +190,78 @@ export default function ProfileHeader() {
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <h1 className="min-w-0 truncate font-serif text-[clamp(24px,3.5vw,36px)] leading-[1.05] tracking-[-0.01em] text-foreground">
-              {user.username}
-            </h1>
+            {isEditingUsername ? (
+              <div className="min-w-0 flex-1">
+                <div className="flex max-w-md items-center gap-2">
+                  <input
+                    value={usernameInput}
+                    onChange={(e) => setUsernameInput(e.target.value)}
+                    maxLength={50}
+                    placeholder="Username"
+                    aria-label="Username"
+                    autoFocus
+                    disabled={usernameSaving}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void handleSaveUsername();
+                      } else if (e.key === "Escape") {
+                        e.preventDefault();
+                        handleCancelEditingUsername();
+                      }
+                    }}
+                    className={cn(
+                      "h-9 min-w-0 flex-1 rounded-lg border border-line-2/70 bg-background px-3 font-serif text-[20px] text-foreground placeholder:text-ink-3",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+                    )}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => void handleSaveUsername()}
+                    disabled={usernameSaving}
+                  >
+                    {usernameSaving ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <Check className="size-3.5" />
+                    )}
+                    <span className="sr-only">Save username</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleCancelEditingUsername}
+                    disabled={usernameSaving}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+                {usernameError && (
+                  <p className="mt-1.5 text-[12px] text-red-500">{usernameError}</p>
+                )}
+              </div>
+            ) : (
+              <>
+                <h1 className="min-w-0 truncate font-serif text-[clamp(24px,3.5vw,36px)] leading-[1.05] tracking-[-0.01em] text-foreground">
+                  {user.username}
+                </h1>
+                <button
+                  type="button"
+                  onClick={handleStartEditingUsername}
+                  title="Change username"
+                  aria-label="Change username"
+                  className={cn(
+                    "grid size-7 shrink-0 place-items-center rounded-md text-ink-3",
+                    "transition-colors hover:bg-surface-3 hover:text-foreground",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+                  )}
+                >
+                  <Pencil className="size-3.5" />
+                </button>
+              </>
+            )}
 
             {user.isPrivate && (
               <span
@@ -149,6 +275,33 @@ export default function ProfileHeader() {
               </span>
             )}
           </div>
+
+          {user.kueId && (
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void handleCopyKueId()}
+                title="Copy your Kue ID — share it so friends can find you"
+                aria-label={`Copy your Kue ID ${user.kueId}`}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full border border-dashed border-line-2 bg-background px-2.5 py-1",
+                  "font-mono text-[10px] tracking-[0.12em] text-ink-2 uppercase",
+                  "transition-colors hover:border-accent/50 hover:text-foreground",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+                )}
+              >
+                {user.kueId}
+                {copiedKueId ? (
+                  <Check className="size-3 text-emerald-500" strokeWidth={2} aria-hidden="true" />
+                ) : (
+                  <Copy className="size-3" strokeWidth={2} aria-hidden="true" />
+                )}
+              </button>
+              <span aria-live="polite" className="font-mono text-[10px] tracking-[0.08em] text-ink-3 uppercase">
+                {copiedKueId ? "Copied" : "Your Kue ID"}
+              </span>
+            </div>
+          )}
 
           {isEditingBio ? (
             <div className="mt-3 max-w-xl">

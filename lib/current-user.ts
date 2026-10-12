@@ -2,6 +2,7 @@ export type CurrentUser = {
   id: number;
   username: string;
   email: string;
+  kueId?: string | null;
   bio: string | null;
   roles: string[];
   // Present in the full /api/v1/me profile; omitted by the refresh payload,

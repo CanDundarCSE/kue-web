@@ -4,12 +4,20 @@ import { useCallback, useEffect, useState } from "react";
 
 import { authFetch } from "@/lib/api/client";
 import type { LibraryEntryDto, PagedResponseDto } from "@/lib/api/library";
-import type { SearchMedia } from "@/lib/search";
 import { useCurrentUser } from "@/lib/use-current-user";
 
 export type LibraryPresence = {
   ids: Set<number>;
   externals: Set<string>;
+};
+
+// Minimal shape needed for a membership check. Both SearchMedia and MediaDto
+// satisfy this.
+export type PresenceQueryable = {
+  id: number;
+  mediaType: string;
+  externalSource: string | null;
+  externalId: string | null;
 };
 
 const EMPTY: LibraryPresence = { ids: new Set(), externals: new Set() };
@@ -96,7 +104,7 @@ function getPresence(key: string): Promise<LibraryPresence> {
   return inflight.promise;
 }
 
-export function isMediaInLibrary(presence: LibraryPresence, media: SearchMedia): boolean {
+export function isMediaInLibrary(presence: LibraryPresence, media: PresenceQueryable): boolean {
   if (typeof media.id === "number" && media.id > 0 && presence.ids.has(media.id)) {
     return true;
   }
@@ -152,7 +160,7 @@ export function useLibraryPresence() {
   }, [user, authLoading]);
 
   const isInLibrary = useCallback(
-    (media: SearchMedia) => isMediaInLibrary(presence, media),
+    (media: PresenceQueryable) => isMediaInLibrary(presence, media),
     [presence],
   );
 

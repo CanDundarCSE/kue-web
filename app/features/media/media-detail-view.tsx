@@ -30,6 +30,7 @@ import {
   type MediaDto,
 } from "@/lib/api/media";
 import type { LibraryEntryDto } from "@/lib/api/library";
+import { useLibraryPresence } from "@/lib/library-presence";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,13 @@ import { cn } from "@/lib/utils";
 function cleanDescription(raw?: string | null): string {
   if (!raw) return "";
   return raw.replace(/<[^>]*>?/gm, "").trim();
+}
+
+// IGDB ships verbose names like "PC (Microsoft Windows)". The parenthetical
+// adds no information on screen, so drop a trailing one for display. Raw
+// values are still what gets saved to the library.
+function formatPlatformName(name: string): string {
+  return name.replace(/\s*\([^)]*\)\s*$/, "").trim() || name;
 }
 
 const MEDIA_TYPES = new Set<MediaType>(["movie", "series", "game", "anime", "manga"]);
@@ -236,6 +244,7 @@ export default function MediaDetailView({
 }) {
   const router = useRouter();
   const { user } = useCurrentUser();
+  const { isInLibrary } = useLibraryPresence();
 
   const [media, setMedia] = useState<MediaDto | null>(null);
   const [similar, setSimilar] = useState<MediaDto[]>([]);
@@ -248,7 +257,12 @@ export default function MediaDetailView({
   const [copied, setCopied] = useState(false);
   const [hoverRating, setHoverRating] = useState<number>(0);
 
-  // Load media, similar titles, and user library entry
+  const extSource = externalParams?.source;
+  const extId = externalParams?.id;
+  const extType = externalParams?.type;
+
+  // Catalog data (media + similar titles). Independent of auth state, so a
+  // sign-in resolving mid-visit doesn't refetch the catalog.
   useEffect(() => {
     let cancelled = false;
 
@@ -271,17 +285,17 @@ export default function MediaDetailView({
             pageSize: 16,
           });
         }
-      } else if (externalParams?.source && externalParams?.id && externalParams?.type) {
+      } else if (extSource && extId && extType) {
         mediaData = await fetchExternalMedia(
-          externalParams.source,
-          externalParams.id,
-          externalParams.type,
+          extSource,
+          extId,
+          extType,
         );
         if (mediaData) {
           similarData = await fetchSimilarMedia({
             id: mediaData.id > 0 ? mediaData.id : null,
-            externalSource: mediaData.externalSource || externalParams.source,
-            externalId: mediaData.externalId || externalParams.id,
+            externalSource: mediaData.externalSource || extSource,
+            externalId: mediaData.externalId || extId,
             type: mediaData.mediaType,
             genres: mediaData.genres,
             pageSize: 16,
@@ -300,18 +314,6 @@ export default function MediaDetailView({
       if (cancelled) return;
       setMedia(mediaData);
       setSimilar(similarData);
-
-      if (mediaData && mediaData.id > 0 && user) {
-        const entryData = await fetchMediaLibraryEntry(mediaData.id);
-        if (!cancelled) {
-          setEntry(entryData);
-          setSelectedPlatform(entryData?.platform ?? null);
-        }
-      } else {
-        setEntry(null);
-        setSelectedPlatform(null);
-      }
-
       setLoading(false);
     }
 
@@ -320,7 +322,39 @@ export default function MediaDetailView({
     return () => {
       cancelled = true;
     };
-  }, [mediaId, externalParams?.source, externalParams?.id, externalParams?.type, user]);
+  }, [mediaId, extSource, extId, extType]);
+
+  // Library entry for the resolved media. Deferred like the other data
+  // effects in this codebase: setState must not run synchronously in the
+  // effect body.
+  useEffect(() => {
+    let cancelled = false;
+
+    const handle = setTimeout(() => {
+      async function loadEntry() {
+        if (!media || media.id <= 0 || !user) {
+          if (!cancelled) {
+            setEntry(null);
+            setSelectedPlatform(null);
+          }
+          return;
+        }
+
+        const entryData = await fetchMediaLibraryEntry(media.id);
+        if (!cancelled) {
+          setEntry(entryData);
+          setSelectedPlatform(entryData?.platform ?? null);
+        }
+      }
+
+      void loadEntry();
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [media, user]);
 
   const isGame = media?.mediaType === "game";
   const currentPlatform = entry?.platform ?? selectedPlatform;
@@ -654,6 +688,15 @@ export default function MediaDetailView({
     }
   };
 
+  // Recommendations exclude titles already in the user's library. Applied
+  // at render so the list updates once library presence resolves, without
+  // refetching the catalog. Declared before the early returns below: hooks
+  // must run unconditionally.
+  const availableSimilar = useMemo(
+    () => similar.filter((item) => !isInLibrary(item)),
+    [similar, isInLibrary],
+  );
+
   if (loading) {
     return <MediaDetailSkeleton />;
   }
@@ -711,19 +754,26 @@ export default function MediaDetailView({
 
   const studioAuthor = media.developer?.trim() || "Unknown";
 
+  // Details-card display: the user's chosen platform when set, otherwise the
+  // catalog list. Rendered as individual chips so long provider names wrap
+  // instead of cramping into one comma-joined string.
+  const detailPlatforms = currentPlatform
+    ? [currentPlatform]
+    : (media.platforms ?? []).filter((platform) => platform.trim());
+
   const moreCategoryLabel = `More ${media.mediaType}`;
 
   const displayedSimilar =
-    similar.length > 4
-      ? similar
+    availableSimilar.length > 4
+      ? availableSimilar
           .slice(similarIndex, similarIndex + 4)
           .concat(
-            similarIndex + 4 > similar.length
-              ? similar.slice(0, (similarIndex + 4) % similar.length)
+            similarIndex + 4 > availableSimilar.length
+              ? availableSimilar.slice(0, (similarIndex + 4) % availableSimilar.length)
               : [],
           )
           .slice(0, 4)
-      : similar;
+      : availableSimilar;
 
   return (
     <article className="mx-auto w-full max-w-[1080px] px-5 py-6 sm:px-8 sm:py-10">
@@ -1272,13 +1322,26 @@ export default function MediaDetailView({
               </div>
 
               {isGame && (
-                <div className="flex items-center justify-between py-3">
-                  <span className="text-[10px] font-mono tracking-[0.16em] text-ink-3 uppercase">
+                <div className="flex items-start justify-between gap-4 py-3">
+                  <span className="shrink-0 pt-1 text-[10px] font-mono tracking-[0.16em] text-ink-3 uppercase">
                     Platform
                   </span>
-                  <span className="text-[13px] font-medium text-foreground">
-                    {currentPlatform ?? (media.platforms && media.platforms.length > 0 ? media.platforms.join(", ") : "Multi-platform")}
-                  </span>
+                  {detailPlatforms.length > 0 ? (
+                    <span className="flex min-w-0 flex-wrap justify-end gap-1.5">
+                      {detailPlatforms.map((platform) => (
+                        <span
+                          key={platform}
+                          className="inline-flex items-center rounded-md border border-line-2/70 bg-surface-3/40 px-2 py-1 font-mono text-[10px] tracking-wider text-ink-2 uppercase"
+                        >
+                          {formatPlatformName(platform)}
+                        </span>
+                      ))}
+                    </span>
+                  ) : (
+                    <span className="text-[13px] font-medium text-foreground">
+                      Multi-platform
+                    </span>
+                  )}
                 </div>
               )}
 
@@ -1324,10 +1387,10 @@ export default function MediaDetailView({
                 </span>
                 <div className="h-px flex-1 bg-line" aria-hidden="true" />
               </div>
-              {similar.length > 4 && (
+              {availableSimilar.length > 4 && (
                 <button
                   type="button"
-                  onClick={() => setSimilarIndex((prev) => (prev + 4) % similar.length)}
+                  onClick={() => setSimilarIndex((prev) => (prev + 4) % availableSimilar.length)}
                   className="inline-flex items-center gap-1.5 rounded-full border border-line-2/70 px-2.5 py-0.5 text-[9.5px] font-mono tracking-wider text-ink-3 uppercase transition-colors hover:border-line-2 hover:bg-surface-3 hover:text-foreground shrink-0"
                   title="Cycle to next recommendations"
                 >
@@ -1339,7 +1402,7 @@ export default function MediaDetailView({
 
             {/* List */}
             <div className="mt-5 space-y-2.5">
-              {similar.length === 0 ? (
+              {availableSimilar.length === 0 ? (
                 <p className="py-4 text-center text-xs text-ink-3">
                   No related titles found in catalog.
                 </p>

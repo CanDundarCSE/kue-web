@@ -2,6 +2,23 @@ import { authFetch } from "@/lib/api/client";
 import type { LibraryEntryDto } from "@/lib/api/library";
 import { invalidateLibraryPresence } from "@/lib/library-presence";
 
+// In-flight dedup: overlapping callers asking for the same catalog resource
+// (e.g. a StrictMode double-mounted effect) share one request instead of
+// multiplying identical network calls. Entries live only while the request
+// is in flight, so no stale data is ever served.
+const inflightRequests = new Map<string, Promise<unknown>>();
+
+function deduped<T>(key: string, run: () => Promise<T>): Promise<T> {
+  const existing = inflightRequests.get(key);
+  if (existing) return existing as Promise<T>;
+
+  const promise = run().finally(() => {
+    if (inflightRequests.get(key) === promise) inflightRequests.delete(key);
+  });
+  inflightRequests.set(key, promise);
+  return promise;
+}
+
 export type MediaDto = {
   id: number;
   mediaType: string; // "movie", "series", "anime", "manga", "game"
@@ -26,9 +43,11 @@ export type MediaDto = {
 };
 
 export async function fetchMediaDetails(id: number): Promise<MediaDto | null> {
-  const response = await fetch(`/api/media/${id}`, { cache: "no-store" }).catch(() => null);
-  if (!response || !response.ok) return null;
-  return (await response.json().catch(() => null)) as MediaDto | null;
+  return deduped(`media:${id}`, async () => {
+    const response = await fetch(`/api/media/${id}`, { cache: "no-store" }).catch(() => null);
+    if (!response || !response.ok) return null;
+    return (await response.json().catch(() => null)) as MediaDto | null;
+  });
 }
 
 export async function fetchExternalMedia(
@@ -41,9 +60,11 @@ export async function fetchExternalMedia(
   url.searchParams.set("id", id);
   url.searchParams.set("type", type);
 
-  const response = await fetch(url.toString(), { cache: "no-store" }).catch(() => null);
-  if (!response || !response.ok) return null;
-  return (await response.json().catch(() => null)) as MediaDto | null;
+  return deduped(url.toString(), async () => {
+    const response = await fetch(url.toString(), { cache: "no-store" }).catch(() => null);
+    if (!response || !response.ok) return null;
+    return (await response.json().catch(() => null)) as MediaDto | null;
+  });
 }
 
 export type FetchSimilarOptions = {
@@ -89,10 +110,12 @@ export async function fetchSimilarMedia(
     endpoint = `/api/media/similar?${params.toString()}`;
   }
 
-  const response = await fetch(endpoint, { cache: "no-store" }).catch(() => null);
-  if (!response || !response.ok) return [];
-  const data = (await response.json().catch(() => null)) as { items?: MediaDto[] } | null;
-  return Array.isArray(data?.items) ? data.items : [];
+  return deduped(endpoint, async () => {
+    const response = await fetch(endpoint, { cache: "no-store" }).catch(() => null);
+    if (!response || !response.ok) return [];
+    const data = (await response.json().catch(() => null)) as { items?: MediaDto[] } | null;
+    return Array.isArray(data?.items) ? data.items : [];
+  });
 }
 
 export async function fetchMediaLibraryEntry(mediaId: number): Promise<LibraryEntryDto | null> {

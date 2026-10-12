@@ -50,6 +50,49 @@ export type ReviewPage = {
   totalPages: number;
 };
 
+export type MediaReviewSort = "newest" | "oldest" | "highest" | "lowest";
+
+export async function fetchMediaReviews(
+  mediaId: number,
+  params?: {
+    page?: number;
+    pageSize?: number;
+    sort?: MediaReviewSort | null;
+    hideSpoilers?: boolean;
+  },
+): Promise<ReviewPage | null> {
+  const query = new URLSearchParams();
+  if (params?.page) query.set("page", String(params.page));
+  if (params?.pageSize) query.set("pageSize", String(params.pageSize));
+  if (params?.sort) query.set("sort", params.sort);
+  if (params?.hideSpoilers) query.set("hideSpoilers", "true");
+
+  const qs = query.toString();
+  const response = await fetch(`/api/media/${mediaId}/reviews${qs ? `?${qs}` : ""}`, {
+    cache: "no-store",
+  }).catch(() => null);
+
+  if (!response || !response.ok) return null;
+
+  const data = (await response.json().catch(() => null)) as {
+    items?: ReviewDto[];
+    totalItems?: number;
+    totalPages?: number;
+  } | null;
+
+  if (!data || !Array.isArray(data.items)) return null;
+
+  const items = data.items;
+  return {
+    items,
+    totalItems: typeof data.totalItems === "number" ? data.totalItems : items.length,
+    totalPages:
+      typeof data.totalPages === "number"
+        ? data.totalPages
+        : Math.max(1, Math.ceil(items.length / (params?.pageSize ?? 20))),
+  };
+}
+
 export function buildReviewPayload(input: {
   content: string;
   rating?: number | null;

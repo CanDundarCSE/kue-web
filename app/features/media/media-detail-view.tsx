@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
+import MediaReviewPreview from "@/app/features/media/media-review-preview";
 import {
   fetchMediaDetails,
   fetchExternalMedia,
@@ -1463,6 +1464,8 @@ export default function MediaDetailView({
           </div>
         </div>
       </section>
+
+      {media.id > 0 && <MediaReviewPreview mediaId={media.id} />}
     </article>
   );
 }

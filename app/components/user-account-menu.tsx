@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { LogIn, LogOut, Settings } from "lucide-react";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/app/components/ui/popover";
-import { initialOf, type CurrentUser } from "@/lib/current-user";
+import UserAvatar from "@/app/components/user-avatar";
+import { type CurrentUser } from "@/lib/current-user";
 import { cn } from "@/lib/utils";
 
 const rowClasses = [
@@ -63,7 +64,11 @@ export default function UserAccountMenu({
           )}
         >
           {user ? (
-            initialOf(user.username)
+            <UserAvatar
+              username={user.username}
+              avatarId={user.avatarId}
+              className="size-full rounded-[inherit]"
+            />
           ) : loading ? (
             <span aria-hidden className="size-3.5 animate-pulse rounded bg-surface-3" />
           ) : (
@@ -76,9 +81,11 @@ export default function UserAccountMenu({
         {user ? (
           <>
             <div className="flex items-center gap-3 px-2 py-2">
-              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent-soft text-[15px] font-semibold text-accent">
-                {initialOf(user.username)}
-              </span>
+              <UserAvatar
+                username={user.username}
+                avatarId={user.avatarId}
+                className="size-10 rounded-full bg-accent-soft text-[15px] font-semibold text-accent"
+              />
               <div className="min-w-0">
                 <p className="truncate text-[13px] font-semibold text-foreground">
                   {user.username}

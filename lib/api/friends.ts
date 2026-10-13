@@ -27,6 +27,7 @@ export type PublicProfileDto = {
   username: string;
   kueId?: string | null;
   bio?: string | null;
+  avatarId?: string | null;
   isPrivate: boolean;
   isFriend: boolean;
   friendshipStatus: string;

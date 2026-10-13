@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 
 import SectionLabel from "@/app/features/home/section-label";
+import UserAvatar from "@/app/components/user-avatar";
 import {
   fetchFriendRequests,
   fetchFriends,
@@ -256,12 +257,11 @@ function AddFriendCard({
 
       {profile && (
         <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-line-2/70 bg-background px-3.5 py-3">
-          <span
-            aria-hidden="true"
-            className="grid size-10 shrink-0 place-items-center rounded-full bg-accent-soft text-[15px] font-semibold text-accent"
-          >
-            {initialOf(profile.username)}
-          </span>
+          <UserAvatar
+            username={profile.username}
+            avatarId={profile.avatarId}
+            className="size-10 rounded-full bg-accent-soft text-[15px] font-semibold text-accent"
+          />
           <div className="min-w-0 flex-1">
             <p className="truncate text-[14px] font-semibold text-foreground">{profile.username}</p>
             <p className="mt-0.5 truncate font-mono text-[10px] tracking-[0.1em] text-ink-3 uppercase">

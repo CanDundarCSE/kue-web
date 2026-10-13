@@ -26,6 +26,8 @@
     "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {
+    "@dicebear/core": "^10.7.0",
+    "@dicebear/styles": "^10.6.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

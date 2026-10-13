@@ -7,13 +7,13 @@ import Link from "next/link";
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
 import SpoilerText from "@/app/components/spoiler-text";
 import { Skeleton } from "@/app/components/ui/skeleton";
+import UserAvatar from "@/app/components/user-avatar";
 import type { PickerMedia } from "@/app/features/reviews/library-media-picker";
 import ReviewComposer, {
   normalizeRating,
   RATING_MAX,
 } from "@/app/features/reviews/review-composer";
 import { buildPageItems } from "@/app/features/search/search-paginator";
-import { initialOf } from "@/lib/current-user";
 import {
   createReview,
   deleteReview,
@@ -638,9 +638,11 @@ export default function ReviewsView() {
   return (
     <div className="mx-auto w-full max-w-[1160px] px-5 py-8 sm:px-8 sm:py-10">
       <header className="flex items-center gap-3.5">
-        <span className="grid size-12 shrink-0 place-items-center rounded-full bg-surface-3 font-serif text-[20px] text-foreground sm:size-14">
-          {initialOf(user.username)}
-        </span>
+        <UserAvatar
+          username={user.username}
+          avatarId={user.avatarId}
+          className="size-12 rounded-full bg-surface-3 font-serif text-[20px] text-foreground sm:size-14"
+        />
         <div className="min-w-0">
           <h1 className="truncate font-serif text-[clamp(22px,3vw,28px)] leading-tight text-foreground">
             {user.username}

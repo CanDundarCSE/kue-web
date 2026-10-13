@@ -5,6 +5,9 @@ export type CurrentUser = {
   kueId?: string | null;
   bio: string | null;
   roles: string[];
+  // Selected profile avatar (one of AVATAR_IDS in lib/avatars.ts); null/absent
+  // means the first-letter avatar.
+  avatarId?: string | null;
   // Present in the full /api/v1/me profile; omitted by the refresh payload,
   // which syncs the profile after a lazy rotation.
   isPrivate?: boolean;

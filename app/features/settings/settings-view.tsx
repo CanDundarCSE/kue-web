@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import SectionLabel from "@/app/features/home/section-label";
+import { avatarSrc, AVATAR_IDS } from "@/lib/avatars";
 import { changePassword, updateMe } from "@/lib/api/me";
+import { initialOf } from "@/lib/current-user";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 
@@ -296,6 +298,91 @@ function PasswordSection() {
   );
 }
 
+function AvatarSection() {
+  const { user } = useCurrentUser();
+  // Id of the avatar being saved ("initials" while clearing); null = idle.
+  const [saving, setSaving] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  const current = user?.avatarId ?? null;
+
+  const choose = async (next: string | null) => {
+    if (saving || next === current) return;
+
+    setSaving(next ?? "initials");
+    setError(null);
+    setSaved(false);
+
+    try {
+      // null would mean "unchanged" on the backend, so "" clears the avatar.
+      // Session sync pushes the updated user into context everywhere.
+      await updateMe({ avatarId: next ?? "" });
+      setSaved(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Couldn't update avatar.");
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const optionClass = (selected: boolean) =>
+    cn(
+      "relative grid aspect-square place-items-center overflow-hidden rounded-lg border bg-accent-soft text-[15px] font-semibold text-accent",
+      "transition-colors duration-150 motion-reduce:transition-none",
+      "hover:border-line-2",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+      "disabled:pointer-events-none disabled:opacity-50",
+      selected ? "border-accent ring-2 ring-accent/30" : "border-line-2/70",
+    );
+
+  return (
+    <section aria-labelledby="settings-avatar" className="rounded-xl border border-line bg-surface-2/60 p-4 sm:p-5">
+      <h2 id="settings-avatar" className="font-mono text-[11px] tracking-[0.16em] text-ink-2 uppercase">
+        Avatar
+      </h2>
+      <p className="mt-1.5 text-[13px] text-ink-2">
+        Pick a critter — or stick with your initial.
+      </p>
+      <div className="mt-3 grid grid-cols-5 gap-2 sm:grid-cols-10" role="group" aria-label="Choose an avatar">
+        <button
+          type="button"
+          onClick={() => void choose(null)}
+          disabled={saving !== null}
+          aria-pressed={current === null}
+          aria-label="Use your initial as avatar"
+          title="Use your initial"
+          className={optionClass(current === null)}
+        >
+          {user ? initialOf(user.username) : "?"}
+        </button>
+        {AVATAR_IDS.map((id) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => void choose(id)}
+            disabled={saving !== null}
+            aria-pressed={current === id}
+            aria-label={`Use the ${id} avatar`}
+            title={id}
+            className={optionClass(current === id)}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element -- local SVG avatar; next/image refuses SVGs without dangerouslyAllowSVG. */}
+            <img src={avatarSrc(id)} alt="" className="size-full object-cover" draggable={false} />
+            {saving === id && (
+              <span className="absolute inset-0 grid place-items-center bg-background/60">
+                <Loader2 className="size-4 animate-spin text-foreground" strokeWidth={2} aria-hidden="true" />
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+      <FieldError message={error} />
+      <FieldSuccess message={saved ? "Avatar updated." : null} />
+    </section>
+  );
+}
+
 export default function SettingsView() {
   const { user, loading } = useCurrentUser();
 
@@ -344,6 +431,7 @@ export default function SettingsView() {
       </section>
 
       <div className="mt-6 space-y-4">
+        <AvatarSection />
         <UsernameSection />
         <EmailSection />
         <PasswordSection />

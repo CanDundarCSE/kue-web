@@ -10,6 +10,8 @@ export async function updateMe(payload: {
   email?: string;
   bio?: string | null;
   isPrivate?: boolean;
+  // null/omitted = leave unchanged; "" = clear the avatar (back to initials).
+  avatarId?: string | null;
 }): Promise<CurrentUser | null> {
   const response = await authFetch("/api/v1/me", {
     method: "PUT",

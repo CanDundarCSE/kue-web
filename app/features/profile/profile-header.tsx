@@ -5,9 +5,9 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/app/components/ui/button";
 import { Skeleton } from "@/app/components/ui/skeleton";
+import UserAvatar from "@/app/components/user-avatar";
 import { updateMe } from "@/lib/api/me";
 import { fetchOverview, type StatsOverview } from "@/lib/api/stats";
-import { initialOf } from "@/lib/current-user";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 
@@ -137,12 +137,11 @@ export default function ProfileHeader() {
   return (
     <article className="rounded-xl border border-line bg-surface-2 p-5 sm:p-6">
       <div className="flex flex-wrap items-center gap-5">
-        <span
-          aria-hidden="true"
-          className="grid size-14 shrink-0 place-items-center rounded-full bg-accent-soft text-[22px] font-semibold text-accent sm:size-16 sm:text-[26px]"
-        >
-          {initialOf(user.username)}
-        </span>
+        <UserAvatar
+          username={user.username}
+          avatarId={user.avatarId}
+          className="size-14 rounded-full bg-accent-soft text-[22px] font-semibold text-accent sm:size-16 sm:text-[26px]"
+        />
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">

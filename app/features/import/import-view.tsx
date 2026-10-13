@@ -20,6 +20,8 @@ import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 
 const MAX_FILE_CHARS = 2_000_000;
+const MAX_FILES = 50;
+const MAX_TOTAL_CHARS = 5_000_000;
 
 const SOURCE_OPTIONS = [
   { value: "", label: "Auto-detect" },
@@ -66,46 +68,82 @@ function statusLabel(status: string) {
 }
 
 function UploadCard({ onStarted }: { onStarted: (job: ImportJobDto) => void }) {
-  const [fileName, setFileName] = useState("");
-  const [content, setContent] = useState<string | null>(null);
+  const [files, setFiles] = useState<{ name: string; content: string }[]>([]);
   const [source, setSource] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const pickFile = async (file: File | undefined) => {
+  const pickFiles = async (list: FileList | null) => {
     setError(null);
-    if (!file) return;
-    if (file.size > MAX_FILE_CHARS) {
-      setError("File is too large (2 MB max).");
+    if (!list || list.length === 0) return;
+    if (list.length > MAX_FILES) {
+      setError(`Too many files (${MAX_FILES} max). Select the Trakt .json files only.`);
       return;
     }
-    const text = await file.text().catch(() => null);
-    if (text === null || !text.trim()) {
-      setError("Couldn't read this file.");
-      return;
+    const picked: { name: string; content: string }[] = [];
+    let total = 0;
+    for (const file of Array.from(list)) {
+      if (file.name.toLowerCase().endsWith(".zip")) {
+        setError("Zip archives aren't accepted — unzip the Trakt export first and select the .json files.");
+        return;
+      }
+      if (file.size > MAX_FILE_CHARS) {
+        setError(`'${file.name}' is too large (2 MB max per file).`);
+        return;
+      }
+      const text = await file.text().catch(() => null);
+      if (text === null || !text.trim()) {
+        setError(`Couldn't read '${file.name}'.`);
+        return;
+      }
+      if (text[0] === "P" && text[1] === "K") {
+        setError("That looks like a zip archive — unzip it first and select the .json files.");
+        return;
+      }
+      total += text.length;
+      if (total > MAX_TOTAL_CHARS) {
+        setError("These files are too large in total (5 MB max).");
+        return;
+      }
+      picked.push({ name: file.name, content: text });
     }
-    setFileName(file.name);
-    setContent(text);
+    setFiles(picked);
   };
 
   const start = async () => {
-    if (!content || busy) return;
+    if (files.length === 0 || busy) return;
+    if (files.length > 1 && source !== "" && source !== "trakt-json") {
+      setError("Uploading multiple files is only supported for Trakt exports.");
+      return;
+    }
     setBusy(true);
     setError(null);
-    const { job, error: message } = await startImport({
-      fileName,
-      content,
-      source: source || null,
-    });
+    const payload =
+      files.length === 1
+        ? { fileName: files[0].name, content: files[0].content, source: source || null }
+        : {
+            fileName: `Trakt export (${files.length} files)`,
+            content: "",
+            source: source || "trakt-json",
+            files: files.map((file) => ({ fileName: file.name, content: file.content })),
+          };
+    const { job, error: message } = await startImport(payload);
     setBusy(false);
     if (!job) {
       setError(message ?? "Couldn't start the import.");
       return;
     }
-    setFileName("");
-    setContent(null);
+    setFiles([]);
     onStarted(job);
   };
+
+  const totalChars = files.reduce((sum, file) => sum + file.content.length, 0);
+  const fileLabel =
+    files.length === 0
+      ? "Choose file(s)"
+      : files.length === 1
+        ? files[0].name
+        : `${files.length} files · ${Math.round(totalChars / 1024)} KB`;
 
   return (
     <section
@@ -117,7 +155,8 @@ function UploadCard({ onStarted }: { onStarted: (job: ImportJobDto) => void }) {
       </h2>
       <p className="mt-1.5 text-[13px] leading-relaxed text-ink-2">
         Drop a MyAnimeList, AniList or Trakt export — or a CSV with title, status, score and
-        progress columns. Matching runs in the background; you can leave this page.
+        progress columns. Trakt ships many .json files: unzip the backup and select them all
+        at once. Matching runs in the background; you can leave this page.
       </p>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
         <label
@@ -128,12 +167,13 @@ function UploadCard({ onStarted }: { onStarted: (job: ImportJobDto) => void }) {
           )}
         >
           <Upload className="size-3.5" strokeWidth={2} aria-hidden="true" />
-          {fileName || "Choose file"}
+          {fileLabel}
           <input
             type="file"
             accept=".xml,.json,.csv,.txt"
+            multiple
             className="sr-only"
-            onChange={(event) => void pickFile(event.target.files?.[0])}
+            onChange={(event) => void pickFiles(event.target.files)}
           />
         </label>
         <select
@@ -155,7 +195,7 @@ function UploadCard({ onStarted }: { onStarted: (job: ImportJobDto) => void }) {
         <button
           type="button"
           onClick={() => void start()}
-          disabled={!content || busy}
+          disabled={files.length === 0 || busy}
           className={cn(
             "inline-flex items-center gap-2 rounded-md bg-foreground px-3.5 py-2 font-mono text-[11px] tracking-[0.08em] text-background uppercase",
             "transition-opacity hover:opacity-90",
@@ -443,11 +483,16 @@ export default function ImportView() {
     if (list !== null) {
       setJobs(list);
       setLoaded(true);
-      if (selectedId === null && list.length > 0) {
-        setSelectedId(list[0].id);
-      }
+      // No history list: stick with a job that still needs attention,
+      // otherwise follow the newest result.
+      setSelectedId((prev) => {
+        if (list.length === 0) return null;
+        const current = prev === null ? null : (list.find((job) => job.id === prev) ?? null);
+        if (current && !TERMINAL_IMPORT_STATUSES.has(current.status)) return prev;
+        return list[0].id;
+      });
     }
-  }, [selectedId]);
+  }, []);
 
   const reloadDetails = useCallback(async () => {
     if (selectedId === null) {
@@ -525,31 +570,6 @@ export default function ImportView() {
             void reloadJobs();
           }}
         />
-
-        {loaded && jobs.length > 0 && (
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Import jobs">
-            {jobs.map((job) => {
-              const active = job.id === selectedId;
-              return (
-                <button
-                  key={job.id}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => setSelectedId(job.id)}
-                  className={cn(
-                    "rounded-full border px-3 py-1.5 font-mono text-[11px] tracking-[0.08em] uppercase",
-                    "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
-                    active
-                      ? "border-transparent bg-foreground text-background"
-                      : "border-line-2/70 text-ink-2 hover:bg-surface-3 hover:text-foreground",
-                  )}
-                >
-                  {job.fileName || `#${job.id}`} · {statusLabel(job.status)}
-                </button>
-              );
-            })}
-          </div>
-        )}
 
         {details && (
           <JobDetails

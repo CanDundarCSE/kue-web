@@ -53,6 +53,7 @@ export async function startImport(input: {
   fileName: string;
   content: string;
   source?: string | null;
+  files?: { fileName: string; content: string }[];
 }): Promise<{ job: ImportJobDto | null; error: string | null }> {
   const response = await authFetch("/api/imports", {
     method: "POST",

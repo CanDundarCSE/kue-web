@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Copy, Loader2, QrCode, Search, UserPlus, X } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -10,6 +11,7 @@ import {
   fetchFriendRequests,
   fetchFriends,
   lookupByKueId,
+  profileHref,
   removeFriend,
   respondToRequest,
   sendFriendRequest,
@@ -17,7 +19,6 @@ import {
   type FriendRequestDto,
   type PublicProfileDto,
 } from "@/lib/api/friends";
-import { initialOf } from "@/lib/current-user";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 
@@ -309,23 +310,34 @@ function RequestRow({
   kueId,
   busy,
   actions,
+  username,
+  avatarId,
 }: {
   title: string;
   subtitle?: string | null;
   kueId?: string | null;
   busy: boolean;
   actions: React.ReactNode;
+  username?: string;
+  avatarId?: string | null;
 }) {
   return (
     <li className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-5">
-      <span
-        aria-hidden="true"
-        className="grid size-9 shrink-0 place-items-center rounded-full bg-surface-3 text-[13px] font-semibold text-ink-2"
-      >
-        {initialOf(title)}
-      </span>
+      <UserAvatar
+        username={title}
+        avatarId={avatarId}
+        className="size-9 rounded-full bg-surface-3 text-[13px] font-semibold text-ink-2"
+      />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-semibold text-foreground">{title}</p>
+        <p className="truncate text-[13px] font-semibold text-foreground">
+          {username ? (
+            <Link href={profileHref({ username, kueId })} className="hover:underline">
+              {title}
+            </Link>
+          ) : (
+            title
+          )}
+        </p>
         <p className="mt-0.5 truncate font-mono text-[10px] tracking-[0.1em] text-ink-3 uppercase">
           {[kueId, subtitle].filter(Boolean).join(" · ")}
         </p>
@@ -344,6 +356,7 @@ export default function FriendsView({ initialKueId }: { initialKueId: string }) 
   const [loaded, setLoaded] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
+  const [friendFilter, setFriendFilter] = useState("");
   const requestRef = useRef(0);
 
   const reload = useCallback(async () => {
@@ -435,13 +448,15 @@ export default function FriendsView({ initialKueId }: { initialKueId: string }) 
             <p className="border-b border-line px-4 py-3 font-mono text-[10px] tracking-[0.16em] text-ink-3 uppercase sm:px-5">
               Requests for you · {incoming.length}
             </p>
-            <ul className="divide-y divide-line">
+            <ul className="max-h-[320px] divide-y divide-line overflow-y-auto">
               {incoming.map((request) => (
                 <RequestRow
                   key={request.id}
                   title={request.requesterUsername}
-                  subtitle={request.requesterBio}
+                  username={request.requesterUsername}
                   kueId={request.requesterKueId}
+                  avatarId={request.requesterAvatarId}
+                  subtitle={request.requesterBio}
                   busy={busyId === `in-${request.id}`}
                   actions={
                     <>
@@ -474,13 +489,14 @@ export default function FriendsView({ initialKueId }: { initialKueId: string }) 
             <p className="border-b border-line px-4 py-3 font-mono text-[10px] tracking-[0.16em] text-ink-3 uppercase sm:px-5">
               Sent · {outgoing.length}
             </p>
-            <ul className="divide-y divide-line">
+            <ul className="max-h-[320px] divide-y divide-line overflow-y-auto">
               {outgoing.map((request) => (
                 <RequestRow
                   key={request.id}
                   title={request.addresseeUsername}
                   subtitle="Pending"
                   kueId={request.addresseeKueId}
+                  avatarId={request.addresseeAvatarId}
                   busy={busyId === `out-${request.id}`}
                   actions={
                     <button
@@ -500,21 +516,52 @@ export default function FriendsView({ initialKueId }: { initialKueId: string }) 
 
         {loaded && (
           <section aria-label="Friends" className="overflow-hidden rounded-xl border border-line bg-surface-2/60">
-            <p className="border-b border-line px-4 py-3 font-mono text-[10px] tracking-[0.16em] text-ink-3 uppercase sm:px-5">
-              Friends · {friends.length}
-            </p>
-            {friends.length === 0 ? (
-              <p className="px-5 py-8 text-center text-[13px] text-ink-2">
-                No friends yet — search a Kue ID above to add someone.
+            <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3 sm:px-5">
+              <p className="font-mono text-[10px] tracking-[0.16em] text-ink-3 uppercase">
+                Friends · {friends.length}
               </p>
-            ) : (
-              <ul className="divide-y divide-line">
-                {friends.map((friend) => (
+              {friends.length > 4 && (
+                <input
+                  value={friendFilter}
+                  onChange={(event) => setFriendFilter(event.target.value)}
+                  placeholder="Filter friends…"
+                  aria-label="Filter friends"
+                  className={cn(
+                    "ml-auto h-7 w-full max-w-44 rounded-md border border-line-2/70 bg-background px-2.5 text-[12px] text-foreground placeholder:text-ink-3",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+                  )}
+                />
+              )}
+            </div>
+            {(() => {
+              const query = friendFilter.trim().toLowerCase();
+              const visible = query
+                ? friends.filter((friend) => friend.username.toLowerCase().includes(query))
+                : friends;
+              if (friends.length === 0) {
+                return (
+                  <p className="px-5 py-8 text-center text-[13px] text-ink-2">
+                    No friends yet — search a Kue ID above to add someone.
+                  </p>
+                );
+              }
+              if (visible.length === 0) {
+                return (
+                  <p className="px-5 py-8 text-center text-[13px] text-ink-2">
+                    No friends match &ldquo;{friendFilter.trim()}&rdquo;.
+                  </p>
+                );
+              }
+              return (
+                <ul className="max-h-[420px] divide-y divide-line overflow-y-auto">
+                  {visible.map((friend) => (
                   <RequestRow
                     key={friend.friendshipId}
                     title={friend.username}
-                    subtitle={friend.bio}
+                    username={friend.username}
                     kueId={friend.kueId}
+                    avatarId={friend.avatarId}
+                    subtitle={friend.bio}
                     busy={busyId === `fr-${friend.friendshipId}`}
                     actions={
                       <button
@@ -526,9 +573,10 @@ export default function FriendsView({ initialKueId }: { initialKueId: string }) 
                       </button>
                     }
                   />
-                ))}
-              </ul>
-            )}
+                  ))}
+                </ul>
+              );
+            })()}
           </section>
         )}
       </div>

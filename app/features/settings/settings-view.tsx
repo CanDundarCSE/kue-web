@@ -383,6 +383,69 @@ function AvatarSection() {
   );
 }
 
+function PrivacySection() {
+  const { user } = useCurrentUser();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const isPrivate = user?.isPrivate ?? false;
+
+  const toggle = async () => {
+    if (saving) return;
+    setSaving(true);
+    setError(null);
+    try {
+      // Session sync pushes the updated user into context everywhere,
+      // so the profile header badge flips without a refetch.
+      await updateMe({ isPrivate: !isPrivate });
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Couldn't update privacy.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section aria-labelledby="settings-privacy" className="rounded-xl border border-line bg-surface-2/60 p-4 sm:p-5">
+      <h2 id="settings-privacy" className="font-mono text-[11px] tracking-[0.16em] text-ink-2 uppercase">
+        Privacy
+      </h2>
+      <p className="mt-1.5 text-[13px] text-ink-2">
+        Private accounts only show the profile card to strangers — library, lists and
+        activity stay visible to mutual friends.
+      </p>
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <span className="font-mono text-[11px] tracking-[0.08em] text-ink-2 uppercase">
+          {isPrivate ? "Private account" : "Public account"}
+        </span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isPrivate}
+          aria-label="Private account"
+          onClick={() => void toggle()}
+          disabled={saving}
+          className={cn(
+            "relative h-6 w-11 shrink-0 rounded-full transition-colors",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+            "disabled:pointer-events-none disabled:opacity-50",
+            isPrivate ? "bg-foreground" : "bg-surface-3",
+          )}
+        >
+          <span
+            aria-hidden="true"
+            className={cn(
+              "absolute top-0.5 left-0.5 size-5 rounded-full bg-background shadow transition-transform",
+              isPrivate && "translate-x-5",
+            )}
+          />
+        </button>
+      </div>
+      <FieldError message={error} />
+    </section>
+  );
+}
+
 export default function SettingsView() {
   const { user, loading } = useCurrentUser();
 
@@ -434,6 +497,7 @@ export default function SettingsView() {
         <AvatarSection />
         <UsernameSection />
         <EmailSection />
+        <PrivacySection />
         <PasswordSection />
       </div>
     </div>

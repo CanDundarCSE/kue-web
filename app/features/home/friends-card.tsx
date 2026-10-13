@@ -1,39 +1,20 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import SectionLabel from "@/app/features/home/section-label";
+import UserAvatar from "@/app/components/user-avatar";
 import { Skeleton } from "@/app/components/ui/skeleton";
-import { authFetch } from "@/lib/api/client";
+import {
+  fetchFriends,
+  fetchFriendsActivity,
+  profileHref,
+  type FriendActivityDto,
+  type FriendDto,
+} from "@/lib/api/friends";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
-
-type Friend = {
-  userId: number;
-  username: string;
-  friendsSince: string;
-};
-
-async function loadFriends(): Promise<Friend[]> {
-  const response = await authFetch("/api/friends", { cache: "no-store" });
-  if (!response.ok) throw new Error("load failed");
-
-  const data: unknown = await response.json();
-  if (!Array.isArray(data)) throw new Error("load failed");
-
-  return (data as Friend[]).filter(
-    (friend) => friend && typeof friend.username === "string",
-  );
-}
-
-function relativeTime(iso: string): string {
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (days < 1) return "today";
-  if (days < 7) return `${days}d`;
-  if (days < 30) return `${Math.floor(days / 7)}w`;
-  if (days < 365) return `${Math.floor(days / 30)}mo`;
-  return `${Math.floor(days / 365)}y`;
-}
 
 function FriendsEmptyState() {
   return (
@@ -45,7 +26,10 @@ function FriendsEmptyState() {
         No activity to show.
       </h3>
       <p className="mt-2 max-w-xs text-[13px] leading-relaxed text-ink-2">
-        Add friends and their recent activity will show up here.
+        <Link href="/friends" className="text-accent hover:underline">
+          Add friends
+        </Link>{" "}
+        and their recent activity will show up here.
       </p>
     </div>
   );
@@ -67,17 +51,21 @@ export function FriendsSkeleton() {
 
 export default function FriendsCard() {
   const { user, loading } = useCurrentUser();
-  const [friends, setFriends] = useState<Friend[] | null>(null);
+  const [friends, setFriends] = useState<FriendDto[] | null>(null);
+  const [activity, setActivity] = useState<FriendActivityDto[] | null>(null);
   const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
-    try {
-      setFriends(await loadFriends());
-      setError(false);
-    } catch {
+    const [f, a] = await Promise.all([fetchFriends(), fetchFriendsActivity(1, 10)]);
+    if (f === null || a === null) {
       setFriends(null);
+      setActivity(null);
       setError(true);
+      return;
     }
+    setFriends(f);
+    setActivity(a);
+    setError(false);
   }, []);
 
   useEffect(() => {
@@ -86,15 +74,15 @@ export default function FriendsCard() {
     let cancelled = false;
 
     (async () => {
-      try {
-        const next = await loadFriends();
-        if (cancelled) return;
-        setFriends(next);
-        setError(false);
-      } catch {
-        if (cancelled) return;
+      const [f, a] = await Promise.all([fetchFriends(), fetchFriendsActivity(1, 10)]);
+      if (cancelled) return;
+      if (f === null || a === null) {
         setError(true);
+        return;
       }
+      setFriends(f);
+      setActivity(a);
+      setError(false);
     })();
 
     return () => {
@@ -129,30 +117,44 @@ export default function FriendsCard() {
     <article className="flex flex-col rounded-xl border border-line bg-surface-2 p-5 sm:p-6">
       <SectionLabel>Friends</SectionLabel>
 
-      {friends === null ? (
+      {friends === null || activity === null ? (
         <FriendsSkeleton />
       ) : friends.length === 0 ? (
         <FriendsEmptyState />
+      ) : activity.length === 0 ? (
+        <p className="mt-4 flex-1 px-2 py-8 text-center text-[13px] text-ink-2">
+          Your friends have been quiet lately.
+        </p>
       ) : (
         <ul className="mt-4 flex flex-1 flex-col">
-          {friends.map((friend) => (
+          {activity.map((item) => (
             <li
-              key={friend.userId}
+              key={item.id}
               className="flex items-center gap-3 border-b border-line/60 py-3 last:border-b-0"
             >
-              <span
-                aria-hidden="true"
-                className="grid size-8 shrink-0 place-items-center rounded-full bg-surface-3 text-[11px] font-semibold text-ink-2"
+              <Link
+                href={profileHref(item)}
+                aria-label={`${item.username}'s profile`}
+                className="shrink-0"
               >
-                {friend.username.charAt(0)}
-              </span>
-
+                <UserAvatar
+                  username={item.username}
+                  avatarId={item.avatarId}
+                  className="size-8 rounded-full bg-surface-3 text-[11px] font-semibold text-ink-2"
+                />
+              </Link>
               <p className="min-w-0 flex-1 truncate text-[13px] leading-tight text-ink-2">
-                <span className="font-semibold text-foreground">{friend.username}</span>{" "}
-                <span className="text-ink-3">
-                  friends since {relativeTime(friend.friendsSince)}
-                </span>
+                <Link
+                  href={profileHref(item)}
+                  className="font-semibold text-foreground hover:underline"
+                >
+                  {item.username}
+                </Link>{" "}
+                {item.formattedText}
               </p>
+              <span className="shrink-0 font-mono text-[10px] tracking-[0.08em] text-ink-3 uppercase">
+                {item.timeAgo}
+              </span>
             </li>
           ))}
         </ul>

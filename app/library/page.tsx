@@ -1,8 +1,14 @@
-import LibraryView from "@/app/features/library/library-view";
+import { Suspense } from "react";
+
+import LibraryView, { LibrarySkeleton } from "@/app/features/library/library-view";
 
 export const dynamic = "force-dynamic";
 
 export default function LibraryPage() {
-  return <LibraryView />;
+  return (
+    <Suspense fallback={<LibrarySkeleton />}>
+      <LibraryView />
+    </Suspense>
+  );
 }
 

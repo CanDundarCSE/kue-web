@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ChevronDown, ChevronLeft, ChevronRight, Search, Upload } from "lucide-react";
 import Link from "next/link";
 import MediaLibraryRow, { LIBRARY_GRID_LAYOUT } from "@/app/components/media-library-row";
@@ -200,6 +201,84 @@ export default function LibraryView() {
   const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState<EditableLibraryItem | null>(null);
+
+  // Deep link from Home → Continue (e.g. /library?open=123): auto-opens the
+  // matching entry in the quick-arrange sheet.
+  const searchParams = useSearchParams();
+  const openParam = searchParams.get("open");
+  const openMediaId = openParam ? Number.parseInt(openParam, 10) : null;
+
+  const syncOpenParam = useCallback((mediaId: number | null) => {
+    try {
+      const url = new URL(window.location.href);
+      if (mediaId === null) {
+        url.searchParams.delete("open");
+      } else {
+        url.searchParams.set("open", String(mediaId));
+      }
+      const next = url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : "");
+      window.history.replaceState(null, "", next);
+    } catch {
+      // Non-browser or restricted context: URL sync is best-effort only.
+    }
+  }, []);
+
+  const handleSelectItem = useCallback(
+    (item: EditableLibraryItem) => {
+      setSelectedItem(item);
+      syncOpenParam(item.mediaId);
+    },
+    [syncOpenParam],
+  );
+
+  const handleSheetOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        setSelectedItem(null);
+        syncOpenParam(null);
+      }
+    },
+    [syncOpenParam],
+  );
+
+  // When ?open=<mediaId> is present, select that entry: prefer the already
+  // loaded page, otherwise fetch the single entry directly so pagination or
+  // filters never block the deep link. Deferred via setTimeout like the other
+  // surfaces: setState must not run synchronously in the effect body
+  // (react-hooks/set-state-in-effect).
+  useEffect(() => {
+    if (authLoading || !user) return;
+    if (openMediaId === null || Number.isNaN(openMediaId)) return;
+    if (loading) return;
+
+    let cancelled = false;
+    const handle = setTimeout(() => {
+      if (cancelled) return;
+
+      const found = items.find((item) => item.mediaId === openMediaId);
+      if (found) {
+        setSelectedItem((prev) => (prev?.mediaId === found.mediaId ? prev : found));
+        return;
+      }
+
+      (async () => {
+        try {
+          const res = await authFetch(`/api/library/${openMediaId}`, { cache: "no-store" });
+          if (!res.ok || cancelled) return;
+          const dto = (await res.json()) as LibraryEntryDto;
+          if (cancelled || !dto || typeof dto.mediaId !== "number") return;
+          setSelectedItem(mapDtoToEditable(dto));
+        } catch {
+          // Leave the library visible when the deep link can't resolve.
+        }
+      })();
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [authLoading, user, openMediaId, items, loading]);
 
   // Tab counts from backend overview stats
   const [tabCounts, setTabCounts] = useState<Record<TabType, number>>({
@@ -635,7 +714,7 @@ export default function LibraryView() {
                         ? { current: item.current, unit: "h", isCompleted }
                         : { current: item.current, total: item.total, unit: item.unit, isCompleted }
                   }
-                  onClick={() => setSelectedItem(item)}
+                  onClick={() => handleSelectItem(item)}
                 />
               );
             })}
@@ -676,9 +755,7 @@ export default function LibraryView() {
       <LibraryEntrySheet
         item={selectedItem}
         open={selectedItem !== null}
-        onOpenChange={(open) => {
-          if (!open) setSelectedItem(null);
-        }}
+        onOpenChange={handleSheetOpenChange}
         onSave={handleSaveItem}
         onDelete={handleDeleteItem}
       />

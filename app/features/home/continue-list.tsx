@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Minus, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
@@ -155,9 +156,12 @@ function StepButton({
   );
 }
 
-export function CardSkeleton() {
+export function CardSkeleton({ className }: { className?: string }) {
   return (
-    <div aria-hidden="true" className="rounded-xl border border-line bg-surface-2 p-4">
+    <div
+      aria-hidden="true"
+      className={cn("w-full rounded-xl border border-line bg-surface-2 p-4", className)}
+    >
       <div className="flex items-start gap-3">
         <Skeleton className="h-[54px] w-[42px] shrink-0 rounded-lg" />
         <div className="flex min-w-0 flex-1 flex-col">
@@ -178,7 +182,7 @@ export function CardSkeleton() {
 
 function EmptyState() {
   return (
-    <div className="col-span-full flex flex-col items-center rounded-xl border border-line bg-surface-2 px-6 py-12 text-center">
+    <div className="flex w-full shrink-0 flex-col items-center rounded-xl border border-line bg-surface-2 px-6 py-12 text-center">
       <span className="text-[9px] font-mono tracking-[0.16em] text-ink-3 uppercase">
         No active titles
       </span>
@@ -281,7 +285,7 @@ export default function ContinueList({ className }: { className?: string }) {
     return (
       <div
         className={cn(
-          "col-span-full flex flex-col items-center gap-4 rounded-xl border border-line bg-surface-2 px-6 py-10 text-center",
+          "flex w-full flex-col items-center gap-4 rounded-xl border border-line bg-surface-2 px-6 py-10 text-center",
           className,
         )}
       >
@@ -308,7 +312,7 @@ export default function ContinueList({ className }: { className?: string }) {
   // top bar already offers sign-in.
   if (!loading && user === null) {
     return (
-      <div className={cn("grid gap-4 sm:grid-cols-2 xl:grid-cols-4", className)}>
+      <div className={cn("flex", className)}>
         <EmptyState />
       </div>
     );
@@ -316,25 +320,40 @@ export default function ContinueList({ className }: { className?: string }) {
 
   if (items === null) {
     return (
-      <div className={cn("grid gap-4 sm:grid-cols-2 xl:grid-cols-4", className)}>
-        <CardSkeleton />
-        <CardSkeleton />
-        <CardSkeleton />
-        <CardSkeleton />
+      <div
+        aria-label="Loading continue items"
+        className={cn(
+          "flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pt-1 pb-3 [scrollbar-width:thin]",
+          className,
+        )}
+      >
+        {[0, 1, 2, 3].map((index) => (
+          <CardSkeleton
+            key={index}
+            className="w-[82%] max-w-[340px] shrink-0 snap-start sm:w-[calc(50%-8px)] sm:max-w-none xl:w-[calc(25%-12px)]"
+          />
+        ))}
       </div>
     );
   }
 
   if (items.length === 0) {
     return (
-      <div className={cn("grid gap-4 sm:grid-cols-2 xl:grid-cols-4", className)}>
+      <div className={cn("flex", className)}>
         <EmptyState />
       </div>
     );
   }
 
   return (
-    <div className={cn("grid gap-4 sm:grid-cols-2 xl:grid-cols-4", className)}>
+    <div
+      role="region"
+      aria-label="Continue items"
+      className={cn(
+        "flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pt-1 pb-3 [scrollbar-width:thin]",
+        className,
+      )}
+    >
       {items.map((item) => {
         const percent =
           item.hasProgress && item.total && item.total > 0
@@ -345,18 +364,24 @@ export default function ContinueList({ className }: { className?: string }) {
         return (
           <article
             key={item.mediaId}
-            className="rounded-xl border border-line bg-surface-2 p-4"
+            className="group w-[82%] max-w-[340px] shrink-0 snap-start rounded-xl border border-line bg-surface-2 p-4 transition-colors duration-150 motion-reduce:transition-none hover:border-line-2 sm:w-[calc(50%-8px)] sm:max-w-none xl:w-[calc(25%-12px)]"
           >
             <div className="flex items-start gap-3">
-              <MediaAvatarCard
-                title={item.title}
-                year={item.year}
-                image={item.image}
-                type={item.type}
-                size="md"
-              />
+              <Link
+                href={`/library?open=${item.mediaId}`}
+                aria-label={`Open ${item.title} in your library`}
+                className="shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+              >
+                <MediaAvatarCard
+                  title={item.title}
+                  year={item.year}
+                  image={item.image}
+                  type={item.type}
+                  size="md"
+                />
+              </Link>
 
-              <div className="flex min-w-0 flex-1 flex-col">
+              <div className="flex min-w-0 flex-1 flex-col self-stretch">
                 <div className="flex items-center gap-1.5">
                   <span
                     aria-hidden="true"
@@ -367,9 +392,14 @@ export default function ContinueList({ className }: { className?: string }) {
                   </span>
                 </div>
 
-                <p className="mt-1.5 truncate text-[15px] leading-tight font-semibold text-foreground">
-                  {item.title}
-                </p>
+                <Link
+                  href={`/library?open=${item.mediaId}`}
+                  className="mt-1.5 min-w-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+                >
+                  <p className="truncate text-[15px] leading-tight font-semibold text-foreground group-hover:underline group-hover:decoration-line-2 group-hover:underline-offset-4">
+                    {item.title}
+                  </p>
+                </Link>
 
                 <div className="mt-auto pt-3">
                   {item.hasProgress ? (

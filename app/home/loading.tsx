@@ -25,11 +25,11 @@ export default function HomeLoading() {
       {/* Continue Section Skeleton */}
       <section className="mt-10">
         <SectionLabel>Continue</SectionLabel>
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <CardSkeleton />
-          <CardSkeleton />
-          <CardSkeleton />
-          <CardSkeleton />
+        <div className="mt-5 flex snap-x snap-mandatory gap-3 overflow-x-hidden px-1 pt-1 pb-3 sm:gap-4">
+          <CardSkeleton className="w-[82%] max-w-[340px] shrink-0 snap-start sm:w-[calc(50%-8px)] sm:max-w-none xl:w-[calc(25%-12px)]" />
+          <CardSkeleton className="w-[82%] max-w-[340px] shrink-0 snap-start sm:w-[calc(50%-8px)] sm:max-w-none xl:w-[calc(25%-12px)]" />
+          <CardSkeleton className="w-[82%] max-w-[340px] shrink-0 snap-start sm:w-[calc(50%-8px)] sm:max-w-none xl:w-[calc(25%-12px)]" />
+          <CardSkeleton className="w-[82%] max-w-[340px] shrink-0 snap-start sm:w-[calc(50%-8px)] sm:max-w-none xl:w-[calc(25%-12px)]" />
         </div>
       </section>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { MoonStar } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import SectionLabel from "@/app/features/home/section-label";
@@ -31,6 +32,74 @@ function FriendsEmptyState() {
         </Link>{" "}
         and their recent activity will show up here.
       </p>
+    </div>
+  );
+}
+
+function FriendsQuietState({ friends }: { friends: FriendDto[] }) {
+  const preview = friends.slice(0, 5);
+  const extra = friends.length - preview.length;
+  const only = friends.length === 1 ? friends[0] : null;
+
+  return (
+    <div className="mt-4 flex flex-1 flex-col items-center justify-center px-2 py-8 text-center">
+      <div className="relative">
+        <div className="flex -space-x-2.5">
+          {preview.map((friend) => (
+            <UserAvatar
+              key={friend.friendshipId}
+              username={friend.username}
+              avatarId={friend.avatarId}
+              className="size-9 rounded-full bg-surface-3 text-[11px] font-semibold text-ink-2 ring-2 ring-surface-2"
+            />
+          ))}
+          {extra > 0 ? (
+            <span
+              aria-hidden="true"
+              className="grid size-9 shrink-0 place-items-center rounded-full bg-surface-3 text-[11px] font-semibold text-ink-2 ring-2 ring-surface-2"
+            >
+              +{extra}
+            </span>
+          ) : null}
+        </div>
+        <span
+          aria-hidden="true"
+          className="absolute -right-2 -bottom-2 grid size-7 place-items-center rounded-full border border-line bg-surface-3 text-ink-2"
+        >
+          <MoonStar className="size-3.5" />
+        </span>
+      </div>
+
+      <span className="mt-5 text-[9px] font-mono tracking-[0.16em] text-ink-3 uppercase">
+        {friends.length === 1 ? "1 friend" : `${friends.length} friends`}
+      </span>
+      <h3 className="mt-3 font-serif text-xl leading-tight text-foreground">
+        {only ? `${only.username} is quiet — for now.` : "Quiet — for now."}
+      </h3>
+      <p className="mt-2 max-w-xs text-[13px] leading-relaxed text-ink-2">
+        {only ? (
+          <>
+            Nothing new from {only.username} lately. Log something — it&rsquo;ll
+            show up in their feed too.
+          </>
+        ) : (
+          <>
+            Nobody&rsquo;s logged anything lately. Be the first — your update
+            will show up in their feeds.
+          </>
+        )}
+      </p>
+      <Link
+        href="/friends"
+        className={cn(
+          "mt-4 inline-flex items-center gap-1.5 rounded-full border border-line-2/70 px-3.5 py-1.5 text-[11px] font-mono tracking-[0.08em] text-ink-2 uppercase",
+          "transition-colors duration-150 motion-reduce:transition-none",
+          "hover:bg-surface-3 hover:text-foreground",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+        )}
+      >
+        View friends
+      </Link>
     </div>
   );
 }
@@ -122,9 +191,7 @@ export default function FriendsCard() {
       ) : friends.length === 0 ? (
         <FriendsEmptyState />
       ) : activity.length === 0 ? (
-        <p className="mt-4 flex-1 px-2 py-8 text-center text-[13px] text-ink-2">
-          Your friends have been quiet lately.
-        </p>
+        <FriendsQuietState friends={friends} />
       ) : (
         <ul className="mt-4 flex flex-1 flex-col">
           {activity.map((item) => (

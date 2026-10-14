@@ -175,8 +175,8 @@ export default function MediaQuiz() {
           How broad is your knowledge?
         </h3>
         <p className="mt-2 max-w-md text-[13px] leading-relaxed text-ink-2">
-          Ten questions, 20 pts each — catalog trivia and general
-          knowledge mixed. Stuck? A 50/50 lifeline costs 15 pts.
+          10 questions, 20 points each. A mix of catalog trivia and general
+          knowledge. Need a hand? Drop 15 points to use a 50/50 lifeline.
         </p>
 
         <div className="mt-4">

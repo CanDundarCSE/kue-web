@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import UserAvatar from "@/app/components/user-avatar";
 import SectionLabel from "@/app/features/home/section-label";
+import GenreSprint from "@/app/features/mini-games/genre-sprint";
 import HigherLower from "@/app/features/mini-games/higher-lower";
 import MediaQuiz from "@/app/features/mini-games/media-quiz";
 import PosterGame from "@/app/features/mini-games/poster-game";
@@ -16,6 +17,7 @@ const BOARD_GAMES = [
   { id: "poster-guess", label: "Poster guess" },
   { id: "media-quiz", label: "Quiz" },
   { id: "higher-lower", label: "Higher-Lower" },
+  { id: "genre-sprint", label: "Sprint" },
 ] as const;
 
 function LeaderboardPanel({ username }: { username: string }) {
@@ -187,7 +189,7 @@ function LeaderboardPanel({ username }: { username: string }) {
 export default function MiniGamesView() {
   const { user, loading } = useCurrentUser();
   const [tab, setTab] = useState<"play" | "board">("play");
-  const [game, setGame] = useState<"poster" | "quiz" | "duel" | null>(null);
+  const [game, setGame] = useState<"poster" | "quiz" | "duel" | "sprint" | null>(null);
 
   return (
     <div className="mx-auto w-full max-w-[1160px] px-5 py-8 sm:px-8 sm:py-10">
@@ -246,26 +248,28 @@ export default function MiniGamesView() {
           <div className="mt-5">
             {tab === "play" ? (
               game === null ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                   {(
                     [
                       {
                         id: "poster",
-                        kicker: "5 rounds · 100 pts each",
                         title: "Poster guess",
                         body: "Pixelated posters that clear with every miss. Name them before they do.",
                       },
                       {
                         id: "quiz",
-                        kicker: "10 questions · 20 pts each",
                         title: "Media quiz",
                         body: "Catalog trivia and general knowledge mixed together.",
                       },
                       {
                         id: "duel",
-                        kicker: "8 duels · streak pays to 100",
                         title: "Higher or lower",
                         body: "Two posters, one call — which scores higher? Streaks multiply the payout.",
+                      },
+                      {
+                        id: "sprint",
+                        title: "Genre sprint",
+                        body: "Name the genre from the artwork before the clock runs out. Hesitate and it's gone.",
                       },
                     ] as const
                   ).map((item) => (
@@ -279,10 +283,7 @@ export default function MiniGamesView() {
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
                       )}
                     >
-                      <span className="text-[9px] font-mono tracking-[0.16em] text-ink-3 uppercase">
-                        {item.kicker}
-                      </span>
-                      <span className="mt-3 block font-serif text-xl leading-tight text-foreground">
+                      <span className="block font-serif text-xl leading-tight text-foreground">
                         {item.title}
                       </span>
                       <span className="mt-2 block max-w-xs text-[13px] leading-relaxed text-ink-2">
@@ -311,8 +312,10 @@ export default function MiniGamesView() {
                     <PosterGame />
                   ) : game === "quiz" ? (
                     <MediaQuiz />
-                  ) : (
+                  ) : game === "duel" ? (
                     <HigherLower />
+                  ) : (
+                    <GenreSprint />
                   )}
                 </div>
               )

@@ -193,6 +193,53 @@ export type QuizPoster = {
   year?: number | null;
 };
 
+export type SprintRound = {
+  media: {
+    id: number | null;
+    mediaType: string;
+    title: string;
+    year?: number | null;
+    coverImage?: string | null;
+  };
+  options: string[];
+  answerIndex: number;
+};
+
+export async function fetchSprint(
+  types: string[],
+  count: number,
+  excludeMedia: number[] = [],
+): Promise<{ rounds: SprintRound[]; poolSize: number } | null> {
+  const params = new URLSearchParams();
+  if (types.length > 0) params.set("types", types.join(","));
+  params.set("count", String(count));
+  if (excludeMedia.length > 0) params.set("excludeMedia", excludeMedia.join(","));
+
+  const response = await authFetch(`/api/mini-games/sprint?${params.toString()}`, {
+    cache: "no-store",
+  }).catch(() => null);
+  if (!response || !response.ok) return null;
+  const data = (await response.json().catch(() => null)) as {
+    rounds?: SprintRound[];
+    poolSize?: number;
+  } | null;
+  if (!data || !Array.isArray(data.rounds) || data.rounds.length === 0) return null;
+  const rounds = data.rounds.filter(
+    (r) =>
+      r?.media?.title &&
+      Array.isArray(r.options) &&
+      r.options.length === 4 &&
+      typeof r.answerIndex === "number" &&
+      r.answerIndex >= 0 &&
+      r.answerIndex < r.options.length,
+  );
+  if (rounds.length === 0) return null;
+  return {
+    rounds,
+    poolSize: typeof data.poolSize === "number" ? data.poolSize : 0,
+  };
+}
+
 export type QuizQuestion = {
   id: string;
   kind: string;

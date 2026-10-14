@@ -380,8 +380,8 @@ export default function PosterGame() {
           What are you guessing today?
         </h3>
         <p className="mt-2 max-w-md text-[13px] leading-relaxed text-ink-2">
-          Five random posters, 100 pts each. Every miss clears the pixels a
-          little — but costs you 20 pts. Spend earned points on hints.
+          5 posters, 100 points each. Miss a guess? The image gets clearer,
+          but it costs you 20 points. You can also spend points to buy hints.
         </p>
 
         <div className="mt-4">

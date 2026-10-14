@@ -237,8 +237,8 @@ export default function HigherLower() {
           Which scores higher?
         </h3>
         <p className="mt-2 max-w-md text-[13px] leading-relaxed text-ink-2">
-          Eight score duels. Wins pay 10 → 20 → 40 → 80 → 100 on a streak — one
-          miss resets it. Solves earn wallet points as usual.
+          8 head-to-head score battles. Wins stack your streak — payouts
+          climb from 10 to 100 points. One miss resets it.
         </p>
 
         <div className="mt-4">

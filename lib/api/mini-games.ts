@@ -145,6 +145,47 @@ export async function fetchLeaderboard(
   return { entries: data.entries, mine: data.mine ?? null };
 }
 
+export type DuelSide = MiniGamePoster;
+
+export type DuelPair = {
+  a: DuelSide;
+  b: DuelSide;
+};
+
+export async function fetchDuels(
+  types: string[],
+  count: number,
+  excludeMedia: number[] = [],
+): Promise<{ pairs: DuelPair[]; poolSize: number } | null> {
+  const params = new URLSearchParams();
+  if (types.length > 0) params.set("types", types.join(","));
+  params.set("count", String(count));
+  if (excludeMedia.length > 0) params.set("excludeMedia", excludeMedia.join(","));
+
+  const response = await authFetch(`/api/mini-games/duels?${params.toString()}`, {
+    cache: "no-store",
+  }).catch(() => null);
+  if (!response || !response.ok) return null;
+  const data = (await response.json().catch(() => null)) as {
+    pairs?: DuelPair[];
+    poolSize?: number;
+  } | null;
+  if (!data || !Array.isArray(data.pairs) || data.pairs.length === 0) return null;
+  const pairs = data.pairs.filter(
+    (pair) =>
+      pair?.a?.title &&
+      pair?.b?.title &&
+      typeof pair.a.score === "number" &&
+      typeof pair.b.score === "number" &&
+      Math.abs(pair.a.score - pair.b.score) >= 0.5,
+  );
+  if (pairs.length === 0) return null;
+  return {
+    pairs,
+    poolSize: typeof data.poolSize === "number" ? data.poolSize : 0,
+  };
+}
+
 export type QuizPoster = {
   image?: string | null;
   title: string;

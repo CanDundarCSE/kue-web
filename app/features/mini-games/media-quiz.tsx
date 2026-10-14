@@ -54,9 +54,6 @@ export default function MediaQuiz() {
   const submittedRef = useRef(false);
 
   const question = questions[qIndex] ?? null;
-  const visibleOptions = question
-    ? question.options.filter((_, i) => !eliminated.includes(i))
-    : [];
 
   useEffect(() => {
     if (authLoading || user === null) return;
@@ -345,16 +342,16 @@ export default function MediaQuiz() {
       )}
 
       <ul className="mt-4 flex flex-col gap-2">
-        {visibleOptions.map((option) => {
-          const originalIndex = question.options.indexOf(option);
+        {question.options.map((option, originalIndex) => {
           const isAnswer = originalIndex === question.answerIndex;
           const isPicked = originalIndex === picked;
+          const isGone = eliminated.includes(originalIndex);
           return (
             <li key={originalIndex}>
               <button
                 type="button"
                 onClick={() => answer(originalIndex)}
-                disabled={answered}
+                disabled={answered || isGone}
                 className={cn(
                   "flex w-full items-center gap-3 rounded-lg border px-3.5 py-2.5 text-left text-[14px] transition-colors",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
@@ -362,8 +359,10 @@ export default function MediaQuiz() {
                     ? "border-accent/60 bg-accent/10 font-semibold text-foreground"
                     : answered && isPicked
                       ? "border-red-400/50 text-red-400"
-                      : "border-line-2/70 text-ink-2 hover:bg-surface-3 hover:text-foreground",
-                  answered && "disabled:pointer-events-none",
+                      : isGone
+                        ? "border-line/60 text-ink-3 opacity-60"
+                        : "border-line-2/70 text-ink-2 hover:bg-surface-3 hover:text-foreground",
+                  (answered || isGone) && "disabled:pointer-events-none",
                 )}
               >
                 <span
@@ -374,9 +373,11 @@ export default function MediaQuiz() {
                       : "bg-surface-3 text-ink-3",
                   )}
                 >
-                  {String.fromCharCode(65 + visibleOptions.indexOf(option))}
+                  {String.fromCharCode(65 + originalIndex)}
                 </span>
-                <span className="min-w-0 flex-1">{option}</span>
+                <span className={cn("min-w-0 flex-1", isGone && "line-through")}>
+                  {option}
+                </span>
               </button>
             </li>
           );

@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import UserAvatar from "@/app/components/user-avatar";
 import SectionLabel from "@/app/features/home/section-label";
+import HigherLower from "@/app/features/mini-games/higher-lower";
 import MediaQuiz from "@/app/features/mini-games/media-quiz";
 import PosterGame from "@/app/features/mini-games/poster-game";
 import { fetchLeaderboard, type LeaderboardEntry } from "@/lib/api/mini-games";
@@ -14,6 +15,7 @@ import { cn } from "@/lib/utils";
 const BOARD_GAMES = [
   { id: "poster-guess", label: "Poster guess" },
   { id: "media-quiz", label: "Quiz" },
+  { id: "higher-lower", label: "Higher-Lower" },
 ] as const;
 
 function LeaderboardPanel({ username }: { username: string }) {
@@ -185,7 +187,7 @@ function LeaderboardPanel({ username }: { username: string }) {
 export default function MiniGamesView() {
   const { user, loading } = useCurrentUser();
   const [tab, setTab] = useState<"play" | "board">("play");
-  const [game, setGame] = useState<"poster" | "quiz" | null>(null);
+  const [game, setGame] = useState<"poster" | "quiz" | "duel" | null>(null);
 
   return (
     <div className="mx-auto w-full max-w-[1160px] px-5 py-8 sm:px-8 sm:py-10">
@@ -198,8 +200,8 @@ export default function MiniGamesView() {
           Guess the poster<span className="text-accent">.</span>
         </h1>
         <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-ink-2">
-          Guess pixelated posters or test your trivia — solves earn points,
-          hints spend them.
+          Guess pixelated posters, test your trivia, or call higher-or-lower —
+          solves earn points, hints spend them.
         </p>
       </section>
 
@@ -244,7 +246,7 @@ export default function MiniGamesView() {
           <div className="mt-5">
             {tab === "play" ? (
               game === null ? (
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {(
                     [
                       {
@@ -257,7 +259,13 @@ export default function MiniGamesView() {
                         id: "quiz",
                         kicker: "10 questions · 20 pts each",
                         title: "Media quiz",
-                        body: "Catalog trivia, your own library, and general knowledge mixed together.",
+                        body: "Catalog trivia and general knowledge mixed together.",
+                      },
+                      {
+                        id: "duel",
+                        kicker: "8 duels · streak pays to 100",
+                        title: "Higher or lower",
+                        body: "Two posters, one call — which scores higher? Streaks multiply the payout.",
                       },
                     ] as const
                   ).map((item) => (
@@ -299,7 +307,13 @@ export default function MiniGamesView() {
                   >
                     ← All games
                   </button>
-                  {game === "poster" ? <PosterGame /> : <MediaQuiz />}
+                  {game === "poster" ? (
+                    <PosterGame />
+                  ) : game === "quiz" ? (
+                    <MediaQuiz />
+                  ) : (
+                    <HigherLower />
+                  )}
                 </div>
               )
             ) : (

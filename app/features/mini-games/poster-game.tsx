@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CalendarDays, Coins, Eye, Flag, Lightbulb, RotateCcw, Type } from "lucide-react";
 
 import SectionLabel from "@/app/features/home/section-label";
+import ScopePicker from "@/app/features/mini-games/scope-picker";
 import {
   fetchPosters,
   fetchWallet,
@@ -24,14 +25,6 @@ const MAX_GUESSES = 6;
 // Small-canvas render widths per de-pixelation step. Step 5+ is full detail.
 const PIXEL_WIDTHS = [12, 18, 28, 44, 72];
 const FULL_DETAIL_LEVEL = PIXEL_WIDTHS.length;
-
-const SCOPE_OPTIONS = [
-  { id: "movie", label: "Film" },
-  { id: "series", label: "Series" },
-  { id: "game", label: "Game" },
-  { id: "anime", label: "Anime" },
-  { id: "manga", label: "Manga" },
-] as const;
 
 const HINT_DEFS = [
   { type: "year", label: "Year", price: 10, icon: CalendarDays },
@@ -270,11 +263,8 @@ export default function PosterGame() {
     [],
   );
 
-  const toggleScope = (id: string) => {
-    setScope((prev) => {
-      if (prev.includes(id)) return prev.filter((t) => t !== id);
-      return [...prev, id];
-    });
+  const toggleScope = (next: string[]) => {
+    setScope(next);
   };
 
   const finishRound = (result: RoundResult) => {
@@ -394,41 +384,8 @@ export default function PosterGame() {
           little — but costs you 20 pts. Spend earned points on hints.
         </p>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setScope([])}
-            aria-pressed={scope.length === 0}
-            className={cn(
-              "rounded-full px-4 py-1.5 font-mono text-[11px] tracking-[0.1em] uppercase transition-colors",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
-              scope.length === 0
-                ? "bg-foreground font-semibold text-background"
-                : "border border-line-2/70 text-ink-2 hover:bg-surface-3 hover:text-foreground",
-            )}
-          >
-            All media
-          </button>
-          {SCOPE_OPTIONS.map((option) => {
-            const active = scope.includes(option.id);
-            return (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => toggleScope(option.id)}
-                aria-pressed={active}
-                className={cn(
-                  "rounded-full px-4 py-1.5 font-mono text-[11px] tracking-[0.1em] uppercase transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
-                  active
-                    ? "bg-foreground font-semibold text-background"
-                    : "border border-line-2/70 text-ink-2 hover:bg-surface-3 hover:text-foreground",
-                )}
-              >
-                {option.label}
-              </button>
-            );
-          })}
+        <div className="mt-4">
+          <ScopePicker scope={scope} onChange={toggleScope} />
         </div>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">

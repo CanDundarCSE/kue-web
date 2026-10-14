@@ -5,19 +5,26 @@ import Link from "next/link";
 
 import UserAvatar from "@/app/components/user-avatar";
 import SectionLabel from "@/app/features/home/section-label";
+import MediaQuiz from "@/app/features/mini-games/media-quiz";
 import PosterGame from "@/app/features/mini-games/poster-game";
 import { fetchLeaderboard, type LeaderboardEntry } from "@/lib/api/mini-games";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 
+const BOARD_GAMES = [
+  { id: "poster-guess", label: "Poster guess" },
+  { id: "media-quiz", label: "Quiz" },
+] as const;
+
 function LeaderboardPanel({ username }: { username: string }) {
   const [entries, setEntries] = useState<LeaderboardEntry[] | null>(null);
   const [mine, setMine] = useState<LeaderboardEntry | null>(null);
   const [error, setError] = useState(false);
+  const [boardGame, setBoardGame] = useState<string>("poster-guess");
 
   const load = useCallback(async () => {
     try {
-      const data = await fetchLeaderboard("poster-guess", 20);
+      const data = await fetchLeaderboard(boardGame, 20);
       if (data === null) {
         setEntries(null);
         setError(true);
@@ -30,7 +37,7 @@ function LeaderboardPanel({ username }: { username: string }) {
       setEntries(null);
       setError(true);
     }
-  }, []);
+  }, [boardGame]);
 
   // Deferred: setState must not run synchronously in the effect body
   // (react-hooks/set-state-in-effect).
@@ -71,7 +78,35 @@ function LeaderboardPanel({ username }: { username: string }) {
 
   return (
     <article className="rounded-xl border border-line bg-surface-2 p-5 sm:p-6">
-      <SectionLabel>Leaderboard — poster guess</SectionLabel>
+      <SectionLabel>Leaderboard</SectionLabel>
+      <p className="mt-2 text-[12px] leading-relaxed text-ink-3">
+        Ranked by total points — ties break by best game, then fewest games.
+      </p>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {BOARD_GAMES.map((game) => (
+          <button
+            key={game.id}
+            type="button"
+            onClick={() => {
+              setEntries(null);
+              setMine(null);
+              setError(false);
+              setBoardGame(game.id);
+            }}
+            aria-pressed={boardGame === game.id}
+            className={cn(
+              "rounded-full px-4 py-1.5 font-mono text-[11px] tracking-[0.1em] uppercase transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+              boardGame === game.id
+                ? "bg-foreground font-semibold text-background"
+                : "border border-line-2/70 text-ink-2 hover:bg-surface-3 hover:text-foreground",
+            )}
+          >
+            {game.label}
+          </button>
+        ))}
+      </div>
 
       {entries === null ? (
         <ul aria-hidden="true" className="mt-4 flex flex-col">
@@ -125,11 +160,12 @@ function LeaderboardPanel({ username }: { username: string }) {
                     {isMine && <span className="text-accent"> · you</span>}
                   </p>
                   <p className="mt-0.5 font-mono text-[10px] tracking-[0.1em] text-ink-3 uppercase">
-                    Best game · {entry.roundsWon} rounds won
+                    Best {entry.bestScore} · {entry.gamesPlayed}{" "}
+                    {entry.gamesPlayed === 1 ? "game" : "games"}
                   </p>
                 </div>
                 <span className="shrink-0 font-mono text-[13px] tabular-nums text-foreground">
-                  {entry.bestScore}
+                  {entry.totalScore}
                 </span>
               </li>
             );
@@ -139,7 +175,7 @@ function LeaderboardPanel({ username }: { username: string }) {
 
       {mine && (entries?.length ?? 0) > 0 && !(entries ?? []).some((e) => e.username === username) && (
         <p className="mt-4 border-t border-line pt-4 font-mono text-[11px] tracking-[0.08em] text-ink-2 uppercase">
-          Your best — {mine.bestScore} pts
+          Your total — {mine.totalScore} pts · best {mine.bestScore}
         </p>
       )}
     </article>
@@ -149,6 +185,7 @@ function LeaderboardPanel({ username }: { username: string }) {
 export default function MiniGamesView() {
   const { user, loading } = useCurrentUser();
   const [tab, setTab] = useState<"play" | "board">("play");
+  const [game, setGame] = useState<"poster" | "quiz" | null>(null);
 
   return (
     <div className="mx-auto w-full max-w-[1160px] px-5 py-8 sm:px-8 sm:py-10">
@@ -161,8 +198,8 @@ export default function MiniGamesView() {
           Guess the poster<span className="text-accent">.</span>
         </h1>
         <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-ink-2">
-          Five pixelated posters per game. Name them before they clear —
-          solves earn points, hints spend them.
+          Guess pixelated posters or test your trivia — solves earn points,
+          hints spend them.
         </p>
       </section>
 
@@ -205,7 +242,69 @@ export default function MiniGamesView() {
           </div>
 
           <div className="mt-5">
-            {tab === "play" ? <PosterGame /> : <LeaderboardPanel username={user.username} />}
+            {tab === "play" ? (
+              game === null ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {(
+                    [
+                      {
+                        id: "poster",
+                        kicker: "5 rounds · 100 pts each",
+                        title: "Poster guess",
+                        body: "Pixelated posters that clear with every miss. Name them before they do.",
+                      },
+                      {
+                        id: "quiz",
+                        kicker: "10 questions · 20 pts each",
+                        title: "Media quiz",
+                        body: "Catalog trivia, your own library, and general knowledge mixed together.",
+                      },
+                    ] as const
+                  ).map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setGame(item.id)}
+                      className={cn(
+                        "rounded-xl border border-line bg-surface-2 p-5 text-left transition-colors sm:p-6",
+                        "hover:border-line-2",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+                      )}
+                    >
+                      <span className="text-[9px] font-mono tracking-[0.16em] text-ink-3 uppercase">
+                        {item.kicker}
+                      </span>
+                      <span className="mt-3 block font-serif text-xl leading-tight text-foreground">
+                        {item.title}
+                      </span>
+                      <span className="mt-2 block max-w-xs text-[13px] leading-relaxed text-ink-2">
+                        {item.body}
+                      </span>
+                      <span className="mt-4 inline-block font-mono text-[11px] tracking-[0.08em] text-accent uppercase">
+                        Play →
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setGame(null)}
+                    className={cn(
+                      "mb-4 font-mono text-[11px] tracking-[0.08em] text-ink-3 uppercase transition-colors",
+                      "hover:text-foreground",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+                    )}
+                  >
+                    ← All games
+                  </button>
+                  {game === "poster" ? <PosterGame /> : <MediaQuiz />}
+                </div>
+              )
+            ) : (
+              <LeaderboardPanel username={user.username} />
+            )}
           </div>
         </>
       ) : (

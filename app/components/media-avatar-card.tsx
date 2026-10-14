@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 
 export type MediaType = "movie" | "series" | "game" | "anime" | "manga";
-export type MediaAvatarCardSize = "sm" | "md" | "fluid";
+export type MediaAvatarCardSize = "sm" | "md" | "lg" | "fluid";
 
 const MEDIA_ACCENT: Record<MediaType, string> = {
   movie: "border-l-[#C4533C] dark:border-l-[#D9705A]",
@@ -17,12 +17,14 @@ const MEDIA_ACCENT: Record<MediaType, string> = {
 const CARD_SIZE: Record<MediaAvatarCardSize, string> = {
   sm: "h-11 w-[34px]",
   md: "h-[54px] w-[42px]",
+  lg: "h-[96px] w-[72px]",
   fluid: "aspect-[42/54] w-full",
 };
 
 const CARD_SIZES: Record<MediaAvatarCardSize, string> = {
   sm: "34px",
   md: "42px",
+  lg: "72px",
   fluid: "(max-width: 640px) 45vw, 160px",
 };
 

@@ -22,9 +22,9 @@ export type LeaderboardEntry = {
   userId: number;
   username: string;
   avatarId?: string | null;
+  totalScore: number;
   bestScore: number;
-  roundsWon: number;
-  achievedAt: string;
+  gamesPlayed: number;
 };
 
 export type MiniGameRoundPayload = {
@@ -143,4 +143,58 @@ export async function fetchLeaderboard(
   } | null;
   if (!data || !Array.isArray(data.entries)) return null;
   return { entries: data.entries, mine: data.mine ?? null };
+}
+
+export type QuizPoster = {
+  image?: string | null;
+  title: string;
+  mediaType: string;
+  year?: number | null;
+};
+
+export type QuizQuestion = {
+  id: string;
+  kind: string;
+  prompt: string;
+  options: string[];
+  answerIndex: number;
+  mediaId: number | null;
+  source: "trivia" | "catalog";
+  posters: QuizPoster[];
+};
+
+export async function fetchQuiz(
+  types: string[],
+  count: number,
+  excludeQ: string[],
+  excludeMedia: number[] = [],
+): Promise<{ questions: QuizQuestion[]; poolSize: number } | null> {
+  const params = new URLSearchParams();
+  if (types.length > 0) params.set("types", types.join(","));
+  params.set("count", String(count));
+  if (excludeQ.length > 0) params.set("excludeQ", excludeQ.join(","));
+  if (excludeMedia.length > 0) params.set("excludeMedia", excludeMedia.join(","));
+
+  const response = await authFetch(`/api/mini-games/quiz?${params.toString()}`, {
+    cache: "no-store",
+  }).catch(() => null);
+  if (!response || !response.ok) return null;
+  const data = (await response.json().catch(() => null)) as {
+    questions?: QuizQuestion[];
+    poolSize?: number;
+  } | null;
+  if (!data || !Array.isArray(data.questions) || data.questions.length === 0) return null;
+  return {
+    questions: data.questions.filter(
+      (q) =>
+        q &&
+        typeof q.prompt === "string" &&
+        Array.isArray(q.options) &&
+        q.options.length >= 2 &&
+        typeof q.answerIndex === "number" &&
+        q.answerIndex >= 0 &&
+        q.answerIndex < q.options.length,
+    ),
+    poolSize: typeof data.poolSize === "number" ? data.poolSize : 0,
+  };
 }

@@ -282,11 +282,25 @@ function DiscoverSearch({ initialQuery }: { initialQuery: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Media-type tabs (the rails mix all types by default)
+// ---------------------------------------------------------------------------
+
+const MEDIA_TABS: { id: string | null; label: string }[] = [
+  { id: null, label: "All" },
+  { id: "movie", label: "Film" },
+  { id: "series", label: "Series" },
+  { id: "game", label: "Game" },
+  { id: "anime", label: "Anime" },
+  { id: "manga", label: "Manga" },
+];
+
+// ---------------------------------------------------------------------------
 // Main view
 // ---------------------------------------------------------------------------
 
 export default function DiscoverView({ initialQuery = "" }: { initialQuery?: string }) {
   const router = useRouter();
+  const [activeType, setActiveType] = useState<string | null>(null);
 
   // ── Top-rated (left panel) ───────────────────────────────────────────────
   const [topRated, setTopRated] = useState<TopRatedItem[]>([]);
@@ -298,10 +312,10 @@ export default function DiscoverView({ initialQuery = "" }: { initialQuery?: str
 
   const mounted = useRef(true);
 
-  const loadTopRated = useCallback(async () => {
+  const loadTopRated = useCallback(async (type: string | null) => {
     setTopRatedState("loading");
     try {
-      const items = await fetchTopRated(10);
+      const items = await fetchTopRated(10, type);
       if (!mounted.current) return;
       setTopRated(items);
       setTopRatedState("ready");
@@ -311,10 +325,10 @@ export default function DiscoverView({ initialQuery = "" }: { initialQuery?: str
     }
   }, []);
 
-  const loadTrending = useCallback(async () => {
+  const loadTrending = useCallback(async (type: string | null) => {
     setTrendingState("loading");
     try {
-      const result = await fetchDiscover();
+      const result = await fetchDiscover(type);
       if (!mounted.current) return;
       setDiscoverData(result);
       setTrendingState("ready");
@@ -327,14 +341,14 @@ export default function DiscoverView({ initialQuery = "" }: { initialQuery?: str
   useEffect(() => {
     mounted.current = true;
     const handle = setTimeout(() => {
-      void loadTopRated();
-      void loadTrending();
+      void loadTopRated(activeType);
+      void loadTrending(activeType);
     }, 0);
     return () => {
       mounted.current = false;
       clearTimeout(handle);
     };
-  }, [loadTopRated, loadTrending]);
+  }, [loadTopRated, loadTrending, activeType]);
 
   const goToMedia = (media: SearchMedia) => {
     if (typeof media.id === "number" && media.id > 0) {
@@ -349,7 +363,6 @@ export default function DiscoverView({ initialQuery = "" }: { initialQuery?: str
   };
 
   const allTrending = discoverData?.trending ?? [];
-  const returning = discoverData?.returning ?? [];
 
   return (
     <div className="mx-auto w-full max-w-[1160px] px-5 py-8 sm:px-8 sm:py-10">
@@ -375,6 +388,35 @@ export default function DiscoverView({ initialQuery = "" }: { initialQuery?: str
         <DiscoverSearch initialQuery={initialQuery} />
       </div>
 
+      {/* ── Media-type tabs ───────────────────────────────────────── */}
+      <div
+        role="tablist"
+        aria-label="Filter by media type"
+        className="mt-8 flex gap-6 overflow-x-auto border-b border-line [scrollbar-width:none] sm:gap-8"
+      >
+        {MEDIA_TABS.map((tab) => {
+          const isActive = activeType === tab.id;
+          return (
+            <button
+              key={tab.label}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => setActiveType(tab.id)}
+              className={cn(
+                "-mb-px flex shrink-0 items-center gap-1.5 pt-1 pb-3 text-[11px] font-mono tracking-[0.14em] whitespace-nowrap uppercase transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+                isActive
+                  ? "border-b-2 border-accent font-semibold text-foreground"
+                  : "border-b-2 border-transparent text-ink-3 hover:text-foreground",
+              )}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* ── Two-column grid ─────────────────────────────────────── */}
       <div className="mt-8 grid gap-4 lg:grid-cols-[1fr_420px]">
         {/* ── Left — top-rated ──────────────────────────────────── */}
@@ -396,7 +438,7 @@ export default function DiscoverView({ initialQuery = "" }: { initialQuery?: str
                 <p className="text-[13px] text-ink-2">Couldn&rsquo;t load top-rated titles.</p>
                 <button
                   type="button"
-                  onClick={() => void loadTopRated()}
+                  onClick={() => void loadTopRated(activeType)}
                   className={cn(
                     "rounded-md border border-line-2/70 px-3 py-1.5 text-[11px] font-mono tracking-[0.08em] text-ink-2 uppercase",
                     "transition-colors duration-150 motion-reduce:transition-none",
@@ -429,7 +471,7 @@ export default function DiscoverView({ initialQuery = "" }: { initialQuery?: str
           </div>
         </div>
 
-        {/* ── Right — trending chart + returning soon ──────────── */}
+        {/* ── Right — trending chart ─────────────────────────────── */}
         <div className="flex flex-col gap-4">
           {/* Ranked trending chart */}
           <div className="rounded-xl border border-line bg-surface-2/40 overflow-hidden">
@@ -450,7 +492,7 @@ export default function DiscoverView({ initialQuery = "" }: { initialQuery?: str
                 <p className="text-[13px] text-ink-2">Couldn&rsquo;t load trending titles.</p>
                 <button
                   type="button"
-                  onClick={() => void loadTrending()}
+                  onClick={() => void loadTrending(activeType)}
                   className={cn(
                     "rounded-md border border-line-2/70 px-3 py-1.5 text-[11px] font-mono tracking-[0.08em] text-ink-2 uppercase",
                     "transition-colors duration-150 motion-reduce:transition-none",
@@ -480,38 +522,6 @@ export default function DiscoverView({ initialQuery = "" }: { initialQuery?: str
               <p className="px-4 py-8 text-center text-[13px] text-ink-2">No data yet.</p>
             )}
           </div>
-
-          {/* Returning soon */}
-          {(trendingState === "loading" || returning.length > 0) && (
-            <div className="rounded-xl border border-line bg-surface-2/40 overflow-hidden">
-              <div className="border-b border-line px-4 py-3">
-                <SectionLabel>Returning soon</SectionLabel>
-              </div>
-              <div className="p-4 flex flex-wrap gap-2">
-                {trendingState === "loading" &&
-                  Array.from({ length: 3 }).map((_, i) => (
-                    <div
-                      key={i}
-                      aria-hidden="true"
-                      className="h-7 w-36 animate-pulse rounded-full bg-surface-3"
-                    />
-                  ))}
-                {trendingState === "ready" &&
-                  returning.map((item) => (
-                    <span
-                      key={item.title}
-                      className={cn(
-                        "inline-flex items-center rounded-full border border-line-2/60 px-3 py-1",
-                        "text-[10px] font-mono tracking-[0.1em] text-ink-2 uppercase",
-                      )}
-                    >
-                      {item.title}
-                      {item.note ? ` — ${item.note}` : ""}
-                    </span>
-                  ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -18,8 +18,9 @@ export type DiscoverData = {
 
 export type TopRatedItem = SearchMedia & { rank: number };
 
-export async function fetchDiscover(): Promise<DiscoverData> {
-  const response = await fetch("/api/discover", { cache: "no-store" }).catch(() => null);
+export async function fetchDiscover(type?: string | null): Promise<DiscoverData> {
+  const url = type ? `/api/discover?type=${encodeURIComponent(type)}` : "/api/discover";
+  const response = await fetch(url, { cache: "no-store" }).catch(() => null);
   if (!response || !response.ok) return { trending: [], returning: [] };
 
   const data: unknown = await response.json().catch(() => null);
@@ -34,8 +35,10 @@ export async function fetchDiscover(): Promise<DiscoverData> {
   };
 }
 
-export async function fetchTopRated(pageSize = 10): Promise<TopRatedItem[]> {
-  const response = await fetch(`/api/top-rated?pageSize=${pageSize}`, {
+export async function fetchTopRated(pageSize = 10, type?: string | null): Promise<TopRatedItem[]> {
+  const params = new URLSearchParams({ pageSize: String(pageSize) });
+  if (type) params.set("type", type);
+  const response = await fetch(`/api/top-rated?${params.toString()}`, {
     cache: "no-store",
   }).catch(() => null);
   if (!response || !response.ok) return [];

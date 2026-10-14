@@ -6,7 +6,7 @@ import { Skeleton } from "@/app/components/ui/skeleton";
 import ContinueList from "@/app/features/home/continue-list";
 import FriendsCard from "@/app/features/home/friends-card";
 import SectionLabel from "@/app/features/home/section-label";
-import WeekCard from "@/app/features/home/week-card";
+import SpotlightCard from "@/app/features/home/spotlight-card";
 import { fetchOverview } from "@/lib/api/stats";
 import { useCurrentUser } from "@/lib/use-current-user";
 
@@ -111,7 +111,7 @@ export default function Dashboard({ now }: { now: number }) {
       <div role="separator" aria-hidden="true" className="my-9 h-px w-full bg-line" />
 
       <section className="grid gap-4 lg:grid-cols-[1.45fr_1fr]">
-        <WeekCard now={now} />
+        <SpotlightCard />
         <FriendsCard />
       </section>
     </div>

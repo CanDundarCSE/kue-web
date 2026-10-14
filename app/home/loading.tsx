@@ -2,7 +2,7 @@ import { Skeleton } from "@/app/components/ui/skeleton";
 import { CardSkeleton } from "@/app/features/home/continue-list";
 import { FriendsSkeleton } from "@/app/features/home/friends-card";
 import SectionLabel from "@/app/features/home/section-label";
-import { WeekSkeleton } from "@/app/features/home/week-card";
+import { SpotlightSkeleton } from "@/app/features/home/spotlight-card";
 
 export default function HomeLoading() {
   return (
@@ -35,12 +35,9 @@ export default function HomeLoading() {
 
       <div role="separator" aria-hidden="true" className="my-9 h-px w-full bg-line" />
 
-      {/* Bottom Grid: Week + Friends Skeleton */}
+      {/* Bottom Grid: Spotlight + Friends Skeleton */}
       <section className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-line bg-surface-2 p-5 sm:p-6">
-          <SectionLabel>This Week</SectionLabel>
-          <WeekSkeleton />
-        </div>
+        <SpotlightSkeleton />
 
         <div className="flex flex-col rounded-xl border border-line bg-surface-2 p-5 sm:p-6">
           <SectionLabel>Friends</SectionLabel>

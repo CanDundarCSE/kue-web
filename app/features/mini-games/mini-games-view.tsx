@@ -199,11 +199,11 @@ export default function MiniGamesView() {
           id="mini-games-heading"
           className="mt-5 font-serif text-[clamp(30px,4.5vw,46px)] leading-[1.05] tracking-[-0.01em] text-foreground"
         >
-          Guess the poster<span className="text-accent">.</span>
+          Pick your game<span className="text-accent">.</span>
         </h1>
         <p className="mt-3 max-w-xl text-[14px] leading-relaxed text-ink-2">
-          Guess pixelated posters, test your trivia, or call higher-or-lower —
-          solves earn points, hints spend them.
+          Pixelated posters, trivia, score duels, and genre sprints — solve
+          to earn points, spend them on hints, and climb the leaderboard.
         </p>
       </section>
 

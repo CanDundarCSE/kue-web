@@ -14,11 +14,7 @@ const FAQ: LandingAccordionItem[] = [
   },
   {
     title: "Can I import my existing lists?",
-    body: "Not yet. Everything gets added by searching the catalog, so there is nothing to type. Importing from MyAnimeList, Trakt or a CSV file is coming next.",
-  },
-  {
-    title: "Why isn't there a review feature?",
-    body: "Because Kue is for tracking, not for hot takes. You rate a title in one tap and share it through your lists. Long reviews belong on the places that are good at them.",
+    body: "Yes. Bring your library over from MyAnimeList, AniList or Trakt exports, or a CSV with title, status, score and progress columns. Kue matches every entry against the catalog, so it is a couple of clicks instead of retyping anything.",
   },
   {
     title: "What does it cost?",

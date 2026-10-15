@@ -129,7 +129,9 @@ function MockRow({
       </div>
 
       <div className="flex shrink-0 items-center gap-2.5">
-        <StatusBadge status={row.status} className="hidden min-w-[104px] justify-center sm:inline-flex" />
+        <span className="hidden min-w-[104px] justify-center sm:flex">
+          <StatusBadge status={row.status} />
+        </span>
 
         <span className="flex w-16 shrink-0 justify-end gap-2">
           {isMovie ? (
@@ -150,7 +152,9 @@ function MockRow({
           )}
         </span>
 
-        <RatingBadge rating={row.score} className="hidden min-w-[84px] justify-center sm:inline-flex" />
+        <span className="hidden min-w-[84px] justify-center sm:flex">
+          <RatingBadge rating={row.score} />
+        </span>
       </div>
     </div>
   );

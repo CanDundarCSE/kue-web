@@ -241,6 +241,44 @@ html.kue-js [data-reveal].is-revealed {
   }
 }
 
+[data-slot="dialog-overlay"] {
+  animation: kue-fade-in 0.2s var(--ease);
+}
+
+[data-slot="dialog-overlay"][data-state="closed"] {
+  animation: kue-fade-out 0.18s var(--ease);
+}
+
+[data-slot="dialog-content"] {
+  animation: kue-dialog-in 0.2s var(--ease);
+}
+
+[data-slot="dialog-content"][data-state="closed"] {
+  animation: kue-dialog-out 0.16s var(--ease);
+}
+
+@keyframes kue-dialog-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes kue-dialog-out {
+  from {
+    opacity: 1;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

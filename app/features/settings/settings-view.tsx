@@ -5,8 +5,16 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import SectionLabel from "@/app/features/home/section-label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/app/components/ui/dialog";
 import { avatarSrc, AVATAR_IDS } from "@/lib/avatars";
-import { changePassword, updateMe } from "@/lib/api/me";
+import { changePassword, deleteAccount, updateMe } from "@/lib/api/me";
 import { initialOf } from "@/lib/current-user";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
@@ -22,6 +30,23 @@ const inputClass = cn(
 const saveButtonClass = cn(
   "inline-flex shrink-0 items-center gap-2 rounded-md bg-foreground px-3.5 py-2 font-mono text-[11px] tracking-[0.08em] text-background uppercase",
   "transition-opacity duration-150 motion-reduce:transition-none",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+  "disabled:pointer-events-none disabled:opacity-50",
+);
+
+const destructiveButtonClass = cn(
+  "inline-flex shrink-0 items-center gap-2 rounded-md border border-[#C4533C]/40 px-3.5 py-2 font-mono text-[11px] tracking-[0.08em] text-[#C4533C] uppercase",
+  "transition-colors duration-150 motion-reduce:transition-none",
+  "hover:bg-[#C4533C]/10",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C4533C]/30",
+  "disabled:pointer-events-none disabled:opacity-50",
+  "dark:border-[#D9705A]/40 dark:text-[#D9705A] dark:hover:bg-[#D9705A]/10 dark:focus-visible:ring-[#D9705A]/30",
+);
+
+const cancelButtonClass = cn(
+  "inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-line-2 px-3.5 py-2 font-mono text-[11px] tracking-[0.08em] text-ink-2 uppercase",
+  "transition-colors duration-150 motion-reduce:transition-none",
+  "hover:text-foreground",
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
   "disabled:pointer-events-none disabled:opacity-50",
 );
@@ -446,6 +471,103 @@ function PrivacySection() {
   );
 }
 
+function DeleteAccountSection() {
+  const { user } = useCurrentUser();
+  const [open, setOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const confirmDelete = async () => {
+    if (deleting) return;
+
+    setDeleting(true);
+    setError(null);
+
+    const message = await deleteAccount();
+    if (message !== null) {
+      // Surface the reason but keep the modal semantics intact: the user can
+      // retry or cancel from the same dialog.
+      setError(message);
+      setDeleting(false);
+      setOpen(false);
+      return;
+    }
+
+    // The account is gone and the session cookies were cleared by the BFF. A
+    // full navigation discards all client state and lands on the sign-in page.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.assign("/login");
+  };
+
+  return (
+    <section
+      aria-labelledby="settings-delete"
+      className="rounded-xl border border-[#C4533C]/30 bg-surface-2/60 p-4 sm:p-5 dark:border-[#D9705A]/30"
+    >
+      <h2
+        id="settings-delete"
+        className="font-mono text-[11px] tracking-[0.16em] text-[#C4533C] uppercase dark:text-[#D9705A]"
+      >
+        Delete account
+      </h2>
+      <p className="mt-1.5 text-[13px] text-ink-2">
+        Permanently delete your account and personal data &mdash; your right to erasure
+        (right to be forgotten). This removes your profile, library, lists, ratings
+        and reviews, and cannot be undone.
+      </p>
+      <div className="mt-3">
+        <button
+          type="button"
+          onClick={() => {
+            setError(null);
+            setOpen(true);
+          }}
+          className={destructiveButtonClass}
+        >
+          Delete my account
+        </button>
+      </div>
+      <FieldError message={error} />
+
+      <Dialog open={open} onOpenChange={(next) => (!deleting ? setOpen(next) : undefined)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete your account?</DialogTitle>
+            <DialogDescription>
+              This permanently deletes{" "}
+              <span className="font-medium text-foreground">{user?.username}</span> and
+              all of your library entries, custom lists, ratings, reviews and profile
+              data. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              disabled={deleting}
+              className={cancelButtonClass}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void confirmDelete()}
+              disabled={deleting}
+              className={destructiveButtonClass}
+            >
+              {deleting && (
+                <Loader2 className="size-3.5 animate-spin" strokeWidth={2} aria-hidden="true" />
+              )}
+              {deleting ? "Deleting..." : "Delete account"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </section>
+  );
+}
+
 export default function SettingsView() {
   const { user, loading } = useCurrentUser();
 
@@ -499,6 +621,7 @@ export default function SettingsView() {
         <EmailSection />
         <PrivacySection />
         <PasswordSection />
+        <DeleteAccountSection />
       </div>
     </div>
   );

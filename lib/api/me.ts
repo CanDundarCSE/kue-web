@@ -47,3 +47,17 @@ export async function changePassword(payload: {
 
   return readApiError(response, "Couldn't change the password.");
 }
+
+// Right to be forgotten. The BFF route deletes the account on the backend and
+// clears the session cookies on a 204. Returns null on success, or a message.
+export async function deleteAccount(): Promise<string | null> {
+  const response = await authFetch("/api/v1/me", {
+    method: "DELETE",
+    cache: "no-store",
+  }).catch(() => null);
+
+  if (!response) return "Couldn't reach the server.";
+  if (response.ok) return null;
+
+  return readApiError(response, "Couldn't delete your account.");
+}

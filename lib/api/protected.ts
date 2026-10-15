@@ -35,6 +35,13 @@ export async function fetchProtected(path: string, init: ProtectedInit = {}): Pr
     return Response.json({ message: "Cannot reach the Kue API." }, { status: 502, headers: NO_STORE });
   }
 
+  // Null-body statuses must not carry a payload: Response.json() throws on
+  // 204/205/304, which would surface every successful delete as a 500. Pass
+  // the empty response through instead.
+  if (upstream.status === 204 || upstream.status === 205 || upstream.status === 304) {
+    return new Response(null, { status: upstream.status, headers: NO_STORE });
+  }
+
   // Non-JSON bodies (proxy error pages, gateway 5xx...) surface with the
   // original status and a stable message the client can display.
   const payload = await upstream.json().catch(() => null);

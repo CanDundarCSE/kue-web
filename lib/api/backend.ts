@@ -52,6 +52,10 @@ function pickString(body: Record<string, unknown>, key: string) {
 type ProxyOptions = {
   path: string;
   fields: readonly string[];
+  // Fields forwarded as JSON booleans. String `fields` are trimmed and rejected
+  // when empty; booleans are passed through untouched (true/false) so the
+  // backend owns the accept/reject decision and its message.
+  booleanFields?: readonly string[];
   validationError: string;
   unavailableError: string;
 };
@@ -63,13 +67,17 @@ export async function proxyAuthPost(request: Request, options: ProxyOptions) {
     return jsonResponse(400, { message: options.validationError });
   }
 
-  const payload: Record<string, string> = {};
+  const payload: Record<string, unknown> = {};
   for (const field of options.fields) {
     const value = pickString(body, field);
     if (!value) {
       return jsonResponse(400, { message: `${field} is required` });
     }
     payload[field] = value;
+  }
+
+  for (const field of options.booleanFields ?? []) {
+    payload[field] = body[field] === true;
   }
 
   let upstream: Response;

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import LogoMark from "@/app/features/landing/logo-mark";
 
 const LINKS = [
@@ -5,6 +7,11 @@ const LINKS = [
   { label: "Features", href: "#features" },
   { label: "Activity", href: "#year" },
   { label: "FAQ", href: "#faq" },
+];
+
+const LEGAL_LINKS = [
+  { label: "Privacy Policy", href: "/privacy-policy" },
+  { label: "Terms of Service", href: "/terms-of-service" },
 ];
 
 export default function SiteFooter() {
@@ -37,6 +44,21 @@ export default function SiteFooter() {
               >
                 {link.label}
               </a>
+            ))}
+          </nav>
+
+          <nav aria-label="Legal">
+            <h3 className="mb-3.5 text-[9px] font-mono tracking-[0.18em] text-ink-3 uppercase">
+              Legal
+            </h3>
+            {LEGAL_LINKS.map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                className="block w-fit py-1 text-[13.5px] text-ink-2 transition-colors hover:text-accent"
+              >
+                {link.label}
+              </Link>
             ))}
           </nav>
         </div>

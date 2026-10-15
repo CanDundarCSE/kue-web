@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Button from "@/app/components/button";
 import {
   Tooltip,
@@ -67,6 +68,7 @@ export default function RegisterForm() {
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [showPassword, setShowPassword] = useState(false);
+  const [agree, setAgree] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
@@ -113,6 +115,16 @@ export default function RegisterForm() {
       return;
     }
 
+    // Belt-and-braces: the button is disabled until consent is given, but
+    // implicit form submission (Enter in a field) must be guarded too.
+    if (!agree) {
+      setMessage({
+        type: "error",
+        text: "Please accept the Privacy Policy and Terms of Service to continue.",
+      });
+      return;
+    }
+
     setIsLoading(true);
     setMessage(null);
 
@@ -124,6 +136,7 @@ export default function RegisterForm() {
           username: form.username.trim(),
           email: form.email,
           password: form.password,
+          isTermsAccepted: agree,
         }),
         credentials: "include",
       });
@@ -298,12 +311,45 @@ export default function RegisterForm() {
             )}
           </div>
 
+          <div>
+            <label className="flex cursor-pointer items-start gap-2.5">
+              <input
+                type="checkbox"
+                checked={agree}
+                onChange={(event) => setAgree(event.target.checked)}
+                aria-label="Agree to the Privacy Policy and Terms of Service"
+                className="mt-0.5 size-4 shrink-0 cursor-pointer accent-accent"
+              />
+              <span className="text-[12px] leading-relaxed text-ink-2">
+                I have read and agree to the{" "}
+                <Link
+                  href="/privacy-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-accent underline decoration-line-2 underline-offset-4 transition-colors hover:decoration-accent"
+                >
+                  Privacy Policy
+                </Link>{" "}
+                and{" "}
+                <Link
+                  href="/terms-of-service"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-accent underline decoration-line-2 underline-offset-4 transition-colors hover:decoration-accent"
+                >
+                  Terms of Service
+                </Link>
+                .
+              </span>
+            </label>
+          </div>
+
           <Button
             type="submit"
             variant="primary"
             size="md"
             fullWidth
-            disabled={isLoading}
+            disabled={isLoading || !agree}
             className="rounded-lg text-sm"
           >
             {isLoading ? "Creating account..." : "Create account"}

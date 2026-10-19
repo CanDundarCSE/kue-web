@@ -4,6 +4,7 @@ import { useSyncExternalStore, type ReactNode } from "react";
 
 import AppSidebar from "@/app/components/app-sidebar";
 import AppTopBar from "@/app/components/app-topbar";
+import LegalReacceptDialog from "@/app/features/legal/legal-reaccept-dialog";
 import { CurrentUserProvider } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 
@@ -104,6 +105,9 @@ export default function AppShell({
           <main className="flex-1">{children}</main>
         </div>
       </div>
+
+      {/* Re-prompts when the accepted legal version is stale. */}
+      <LegalReacceptDialog />
     </CurrentUserProvider>
   );
 }

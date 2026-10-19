@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import SpoilerText from "@/app/components/spoiler-text";
 import SectionLabel from "@/app/features/home/section-label";
+import ReviewReportLink from "@/app/features/reviews/review-report-link";
 import SearchPaginator from "@/app/features/search/search-paginator";
 import { fetchMediaDetails, type MediaDto } from "@/lib/api/media";
 import {
@@ -52,11 +53,18 @@ function ReviewRow({ review }: { review: ReviewDto }) {
           maskAll={review.containsSpoilers && (review.spoilers?.length ?? 0) === 0}
         />
       </div>
-      {review.containsSpoilers && (
-        <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 font-mono text-[10px] tracking-[0.08em] text-accent uppercase">
-          Contains spoilers
-        </p>
-      )}
+      <div className="mt-2 flex items-center gap-3">
+        {review.containsSpoilers && (
+          <p className="inline-flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 font-mono text-[10px] tracking-[0.08em] text-accent uppercase">
+            Contains spoilers
+          </p>
+        )}
+        <ReviewReportLink
+          reviewId={review.id}
+          mediaId={review.mediaId}
+          className="font-mono text-[10px] tracking-[0.08em] text-ink-3 uppercase underline-offset-2 transition-colors hover:text-foreground hover:underline"
+        />
+      </div>
     </li>
   );
 }

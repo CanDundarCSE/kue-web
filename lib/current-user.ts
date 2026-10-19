@@ -12,6 +12,9 @@ export type CurrentUser = {
   // which syncs the profile after a lazy rotation.
   isPrivate?: boolean;
   createdAt?: string;
+  // Version of the Privacy Policy / Terms of Service this user accepted.
+  // Compared against LEGAL_VERSION to decide whether to re-prompt.
+  termsVersion?: string | null;
 };
 
 export function isCurrentUser(value: unknown): value is CurrentUser {

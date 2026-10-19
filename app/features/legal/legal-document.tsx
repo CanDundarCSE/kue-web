@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import LogoMark from "@/app/features/landing/logo-mark";
 import type { LegalDocumentContent } from "@/app/features/legal/legal-content";
+import { cn } from "@/lib/utils";
 
 type LegalDocumentBodyProps = Pick<
   LegalDocumentContent,
@@ -51,6 +52,46 @@ export function LegalDocumentBody({
               </p>
             ))}
 
+            {section.table && (
+              <div className="mt-4 overflow-x-auto rounded-lg border border-line">
+                <table className="w-full min-w-[36rem] border-collapse text-left text-[13px] leading-relaxed">
+                  <thead>
+                    <tr className="border-b border-line bg-surface-2">
+                      {section.table.headers.map((header) => (
+                        <th
+                          key={header}
+                          scope="col"
+                          className="px-3.5 py-2.5 font-mono text-[10px] font-medium tracking-[0.1em] whitespace-nowrap text-ink-3 uppercase"
+                        >
+                          {header}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {section.table.rows.map((row, rowIndex) => (
+                      <tr
+                        key={rowIndex}
+                        className="border-b border-line last:border-b-0"
+                      >
+                        {row.map((cell, cellIndex) => (
+                          <td
+                            key={cellIndex}
+                            className={cn(
+                              "px-3.5 py-2.5 align-top text-ink-2",
+                              cellIndex === 0 && "font-mono text-[12px] whitespace-nowrap text-foreground",
+                            )}
+                          >
+                            {cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
             {section.bullets && section.bullets.length > 0 && (
               <ul className="mt-2.5 space-y-2">
                 {section.bullets.map((bullet, index) => (
@@ -76,9 +117,10 @@ export function LegalDocumentBody({
 
 type LegalDocumentProps = LegalDocumentContent;
 
-// Shared shell + typography for the public legal pages (/privacy-policy and
-// /terms-of-service). Kept dependency-free (no @tailwindcss/typography) so the
-// prose styling matches the rest of the marketing surface.
+// Shared shell + typography for the public legal pages (/privacy-policy,
+// /cookies and /terms-of-service). Kept dependency-free (no
+// @tailwindcss/typography) so the prose styling matches the rest of the
+// marketing surface.
 export default function LegalDocument({
   label,
   title,
@@ -98,6 +140,9 @@ export default function LegalDocument({
           <nav className="flex items-center gap-5 text-[12px] text-ink-2">
             <Link href="/privacy-policy" className="transition-colors hover:text-accent">
               Privacy
+            </Link>
+            <Link href="/cookies" className="transition-colors hover:text-accent">
+              Cookies
             </Link>
             <Link href="/terms-of-service" className="transition-colors hover:text-accent">
               Terms

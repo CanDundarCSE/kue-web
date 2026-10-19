@@ -3,6 +3,7 @@
 import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { authFetch } from "@/lib/api/client";
 import {
   fetchNotifications,
   fetchUnreadCount,
@@ -19,8 +20,30 @@ function hubUrl(): string {
   return `${base}/hubs/notifications`;
 }
 
-// One shared connection per session: the accessToken cookie is HttpOnly, so
-// the browser sends it via withCredentials and JS never touches the token.
+// The API may live on a different origin (split web/API hosting), where the
+// HttpOnly access-token cookie is never sent. Ask our own server for a
+// short-lived, hub-scoped token instead and hand it to SignalR.
+async function fetchHubToken(): Promise<string> {
+  const response = await authFetch("/api/hub-token", {
+    method: "POST",
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Hub authentication failed (${response.status}).`);
+  }
+
+  const data: unknown = await response.json().catch(() => null);
+  if (!data || typeof data !== "object" || typeof (data as { token?: unknown }).token !== "string") {
+    throw new Error("Hub authentication returned an invalid response.");
+  }
+
+  return (data as { token: string }).token;
+}
+
+// One shared connection per session. The long-lived access token stays in an
+// HttpOnly cookie; the browser exchanges it (same-origin) for a short-lived
+// hub token, so script code never holds the real session token.
 let connection: HubConnection | null = null;
 let ownerId: number | null = null;
 let startTask: Promise<HubConnection> | null = null;
@@ -45,7 +68,10 @@ function ensureConnection(userId: number): Promise<HubConnection> {
     }
     ownerId = userId;
     const next = new HubConnectionBuilder()
-      .withUrl(hubUrl(), { withCredentials: true })
+      .withUrl(hubUrl(), {
+        accessTokenFactory: fetchHubToken,
+        withCredentials: false,
+      })
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Warning)
       .build();

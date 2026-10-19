@@ -56,6 +56,9 @@ type ProxyOptions = {
   // when empty; booleans are passed through untouched (true/false) so the
   // backend owns the accept/reject decision and its message.
   booleanFields?: readonly string[];
+  // Server-stamped constant fields the client cannot spoof or stale-cache
+  // (e.g. the legal document version).
+  stringFields?: Record<string, string>;
   validationError: string;
   unavailableError: string;
 };
@@ -78,6 +81,10 @@ export async function proxyAuthPost(request: Request, options: ProxyOptions) {
 
   for (const field of options.booleanFields ?? []) {
     payload[field] = body[field] === true;
+  }
+
+  for (const [field, value] of Object.entries(options.stringFields ?? {})) {
+    payload[field] = value;
   }
 
   let upstream: Response;

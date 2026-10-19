@@ -11,6 +11,7 @@ const LINKS = [
 
 const LEGAL_LINKS = [
   { label: "Privacy Policy", href: "/privacy-policy" },
+  { label: "Cookie Policy", href: "/cookies" },
   { label: "Terms of Service", href: "/terms-of-service" },
 ];
 
@@ -63,8 +64,17 @@ export default function SiteFooter() {
           </nav>
         </div>
 
-        <div className="pt-6 text-[8.5px] font-mono tracking-[0.12em] text-ink-3 uppercase">
-          © 2026 Kue
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 pt-6">
+          <p className="text-[8.5px] font-mono tracking-[0.12em] text-ink-3 uppercase">
+            © 2026 Kue
+          </p>
+          <p className="text-[8.5px] font-mono tracking-[0.12em] text-ink-3 uppercase">
+            This product uses the TMDB API but is not endorsed or certified by
+            TMDB.
+          </p>
+          <p className="text-[8.5px] font-mono tracking-[0.12em] text-ink-3 uppercase">
+            Metadata by AniList &amp; IGDB
+          </p>
         </div>
       </div>
     </footer>

@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import Button from "@/app/components/button";
+import LegalDialog from "@/app/features/legal/legal-dialog";
+import type { LegalDocumentKey } from "@/app/features/legal/legal-content";
 import {
   Tooltip,
   TooltipContent,
@@ -59,6 +60,13 @@ const PASSWORD_REQUIREMENTS = [
   "One special character (!@#$%^&*)",
 ];
 
+const legalLinkClasses = [
+  "inline rounded-sm font-medium text-accent underline decoration-line-2 underline-offset-4",
+  "transition-colors hover:decoration-accent",
+  "focus-visible:ring-2 focus-visible:ring-accent/30 focus-visible:outline-none",
+  "cursor-pointer",
+].join(" ");
+
 export default function RegisterForm() {
   const router = useRouter();
   const [form, setForm] = useState<FormState>({
@@ -69,6 +77,14 @@ export default function RegisterForm() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [showPassword, setShowPassword] = useState(false);
   const [agree, setAgree] = useState(false);
+  const [legalDocument, setLegalDocument] =
+    useState<LegalDocumentKey>("privacy");
+  const [legalOpen, setLegalOpen] = useState(false);
+
+  const openLegal = (key: LegalDocumentKey) => {
+    setLegalDocument(key);
+    setLegalOpen(true);
+  };
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
@@ -322,23 +338,33 @@ export default function RegisterForm() {
               />
               <span className="text-[12px] leading-relaxed text-ink-2">
                 I have read and agree to the{" "}
-                <Link
+                <a
                   href="/privacy-policy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-accent underline decoration-line-2 underline-offset-4 transition-colors hover:decoration-accent"
+                  onClick={(event) => {
+                    // Keep the surrounding <label> from toggling the consent
+                    // checkbox, and fall back to the full page without JS.
+                    event.preventDefault();
+                    event.stopPropagation();
+                    openLegal("privacy");
+                  }}
+                  aria-haspopup="dialog"
+                  className={legalLinkClasses}
                 >
                   Privacy Policy
-                </Link>{" "}
+                </a>{" "}
                 and{" "}
-                <Link
+                <a
                   href="/terms-of-service"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-accent underline decoration-line-2 underline-offset-4 transition-colors hover:decoration-accent"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    openLegal("terms");
+                  }}
+                  aria-haspopup="dialog"
+                  className={legalLinkClasses}
                 >
                   Terms of Service
-                </Link>
+                </a>
                 .
               </span>
             </label>
@@ -366,6 +392,12 @@ export default function RegisterForm() {
           </a>
         </div>
       </div>
+
+      <LegalDialog
+        open={legalOpen}
+        documentKey={legalDocument}
+        onOpenChange={setLegalOpen}
+      />
     </TooltipProvider>
   );
 }

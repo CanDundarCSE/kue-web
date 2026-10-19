@@ -1,20 +1,80 @@
 import Link from "next/link";
 
 import LogoMark from "@/app/features/landing/logo-mark";
+import type { LegalDocumentContent } from "@/app/features/legal/legal-content";
 
-export type LegalSection = {
-  heading: string;
-  paragraphs?: string[];
-  bullets?: string[];
+type LegalDocumentBodyProps = Pick<
+  LegalDocumentContent,
+  "title" | "lastUpdated" | "intro" | "sections"
+> & {
+  showTitle?: boolean;
 };
 
-type LegalDocumentProps = {
-  label: string;
-  title: string;
-  lastUpdated: string;
-  intro: string;
-  sections: LegalSection[];
-};
+// Renders the document itself. Shared by the public legal pages and the
+// in-app dialog so the two never drift apart.
+export function LegalDocumentBody({
+  title,
+  showTitle = true,
+  lastUpdated,
+  intro,
+  sections,
+}: LegalDocumentBodyProps) {
+  return (
+    <article>
+      {showTitle && (
+        <h1 className="font-serif text-[clamp(26px,3vw,32px)] leading-[1.08] tracking-[-0.01em] text-foreground">
+          {title}
+        </h1>
+      )}
+
+      <p className="mt-2 font-mono text-[11px] tracking-[0.08em] text-ink-3 uppercase">
+        Last updated {lastUpdated}
+      </p>
+
+      <div className="mt-6 space-y-4 text-[14px] leading-relaxed text-ink-2">
+        <p>{intro}</p>
+      </div>
+
+      <div className="mt-8 space-y-8">
+        {sections.map((section) => (
+          <section key={section.heading} aria-labelledby={slug(section.heading)}>
+            <h2
+              id={slug(section.heading)}
+              className="text-[16px] font-semibold tracking-[-0.01em] text-foreground"
+            >
+              {section.heading}
+            </h2>
+
+            {section.paragraphs?.map((paragraph, index) => (
+              <p key={index} className="mt-2.5 text-[14px] leading-relaxed text-ink-2">
+                {paragraph}
+              </p>
+            ))}
+
+            {section.bullets && section.bullets.length > 0 && (
+              <ul className="mt-2.5 space-y-2">
+                {section.bullets.map((bullet, index) => (
+                  <li
+                    key={index}
+                    className="flex items-start gap-3 text-[14px] leading-relaxed text-ink-2"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="mt-[7px] size-1.5 shrink-0 bg-accent [clip-path:polygon(0_0,100%_0,50%_100%)]"
+                    />
+                    <span>{bullet}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+type LegalDocumentProps = LegalDocumentContent;
 
 // Shared shell + typography for the public legal pages (/privacy-policy and
 // /terms-of-service). Kept dependency-free (no @tailwindcss/typography) so the
@@ -53,57 +113,19 @@ export default function LegalDocument({
       </header>
 
       <main className="mx-auto w-full max-w-[820px] flex-1 px-5 py-12 sm:px-8 sm:py-16">
-        <article>
-          <p className="flex items-center gap-3 text-[10px] font-mono tracking-[0.18em] text-ink-3 uppercase">
-            <span className="shrink-0">{label}</span>
-            <span aria-hidden="true" className="h-px flex-1 bg-line" />
-          </p>
+        <p className="flex items-center gap-3 text-[10px] font-mono tracking-[0.18em] text-ink-3 uppercase">
+          <span className="shrink-0">{label}</span>
+          <span aria-hidden="true" className="h-px flex-1 bg-line" />
+        </p>
 
-          <h1 className="mt-6 font-serif text-[clamp(30px,4.5vw,44px)] leading-[1.08] tracking-[-0.01em] text-foreground">
-            {title}
-          </h1>
-
-          <p className="mt-3 font-mono text-[11px] tracking-[0.08em] text-ink-3 uppercase">
-            Last updated {lastUpdated}
-          </p>
-
-          <div className="mt-8 space-y-4 text-[14px] leading-relaxed text-ink-2">
-            <p>{intro}</p>
-          </div>
-
-          <div className="mt-10 space-y-10">
-            {sections.map((section) => (
-              <section key={section.heading} aria-labelledby={slug(section.heading)}>
-                <h2
-                  id={slug(section.heading)}
-                  className="text-[18px] font-semibold tracking-[-0.01em] text-foreground"
-                >
-                  {section.heading}
-                </h2>
-
-                {section.paragraphs?.map((paragraph, index) => (
-                  <p key={index} className="mt-3 text-[14px] leading-relaxed text-ink-2">
-                    {paragraph}
-                  </p>
-                ))}
-
-                {section.bullets && section.bullets.length > 0 && (
-                  <ul className="mt-3 space-y-2">
-                    {section.bullets.map((bullet, index) => (
-                      <li key={index} className="flex items-start gap-3 text-[14px] leading-relaxed text-ink-2">
-                        <span
-                          aria-hidden="true"
-                          className="mt-[7px] size-1.5 shrink-0 bg-accent [clip-path:polygon(0_0,100%_0,50%_100%)]"
-                        />
-                        <span>{bullet}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-            ))}
-          </div>
-        </article>
+        <div className="mt-6">
+          <LegalDocumentBody
+            title={title}
+            lastUpdated={lastUpdated}
+            intro={intro}
+            sections={sections}
+          />
+        </div>
       </main>
 
       <footer className="border-t border-line py-8">

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useMemo } from "react";
 import {
   ChartColumn,
   ChevronLeft,
@@ -10,6 +11,7 @@ import {
   House,
   Menu,
   NotebookPen,
+  Shield,
   TrendingUp,
   User,
   Users,
@@ -24,6 +26,7 @@ import {
   TooltipTrigger,
 } from "@/app/components/ui/tooltip";
 import LogoMark from "@/app/features/landing/logo-mark";
+import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 
 export type AppSidebarItem = {
@@ -34,15 +37,21 @@ export type AppSidebarItem = {
 };
 
 export const DEFAULT_ITEMS: AppSidebarItem[] = [
-   { href: "/home", label: "Home", icon: House },
-   { href: "/library", label: "Library", icon: ChartColumn },
-   { href: "/discover", label: "Discover", icon: Compass },
-   { href: "/mini-games", label: "Mini-games", icon: Gamepad2 },
-   { href: "/reviews", label: "Reviews", icon: NotebookPen },
-   { href: "/friends", label: "Friends", icon: Users },
-   { href: "/stats", label: "Stats", icon: TrendingUp },
-   { href: "/profile", label: "Profile", icon: User },
+  { href: "/home", label: "Home", icon: House },
+  { href: "/library", label: "Library", icon: ChartColumn },
+  { href: "/discover", label: "Discover", icon: Compass },
+  { href: "/mini-games", label: "Mini-games", icon: Gamepad2 },
+  { href: "/reviews", label: "Reviews", icon: NotebookPen },
+  { href: "/friends", label: "Friends", icon: Users },
+  { href: "/stats", label: "Stats", icon: TrendingUp },
+  { href: "/profile", label: "Profile", icon: User },
 ];
+
+export const ADMIN_ITEM: AppSidebarItem = {
+  href: "/admin",
+  label: "Admin",
+  icon: Shield,
+};
 
 export function isActive(pathname: string, href: string) {
   if (href.startsWith("#")) return false;
@@ -140,6 +149,15 @@ export default function AppSidebar({
   onToggleCollapse?: () => void;
 }) {
   const pathname = usePathname();
+  const { user } = useCurrentUser();
+
+  const resolvedItems = useMemo(() => {
+    const isAdmin = user?.roles.some((role) => role.toLowerCase() === "admin");
+    if (!isAdmin || items.some((item) => item.href === ADMIN_ITEM.href)) {
+      return items;
+    }
+    return [...items, ADMIN_ITEM];
+  }, [items, user]);
 
   // The collapse control only makes sense in the persistent desktop rail. The
   // mobile sheet closes itself via SheetClose, so it never shows the toggle.
@@ -168,10 +186,10 @@ export default function AppSidebar({
 
         {inSheet ? (
           <SheetDescription>
-            {items.map((item) => item.label).join(", ")}
+            {resolvedItems.map((item) => item.label).join(", ")}
           </SheetDescription>
         ) : !collapsed ? (
-          <p className="sr-only">{items.map((item) => item.label).join(", ")}</p>
+          <p className="sr-only">{resolvedItems.map((item) => item.label).join(", ")}</p>
         ) : null}
 
         {/* When open the toggle sits at the right edge of the header; when
@@ -198,7 +216,7 @@ export default function AppSidebar({
       {collapsed ? (
         <TooltipProvider delayDuration={150}>
           <nav aria-label="Primary" className="flex flex-col items-center gap-1 px-2 pt-3">
-            {items.map((item) => (
+            {resolvedItems.map((item) => (
               <CollapsedNavRow
                 key={item.label}
                 item={item}
@@ -209,7 +227,7 @@ export default function AppSidebar({
         </TooltipProvider>
       ) : (
         <nav aria-label="Primary" className="flex shrink-0 flex-col gap-0.5 px-3">
-          {items.map((item) => (
+          {resolvedItems.map((item) => (
             <NavRow
               key={item.label}
               item={item}

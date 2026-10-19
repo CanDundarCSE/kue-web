@@ -21,6 +21,10 @@ export async function POST(request: Request) {
     return Response.json({ message: "An external id is required." }, { status: 400 });
   }
 
+  if (externalId.trim().length > 100) {
+    return Response.json({ message: "External id cannot exceed 100 characters." }, { status: 400 });
+  }
+
   return fetchProtected("/admin/media/sync", {
     method: "POST",
     body: JSON.stringify({

@@ -556,6 +556,15 @@ export default function UserProfileView({ username }: { username: string }) {
               <div className="mt-3">
                 <FriendAction profile={profile} onChanged={() => void reload()} />
               </div>
+              {profile.isPrivate && !profile.counts && (
+                <p className="mt-3 flex items-start gap-1.5 text-[12px] leading-relaxed text-ink-3">
+                  <Lock className="mt-0.5 size-3 shrink-0" strokeWidth={2} aria-hidden="true" />
+                  <span>
+                    This account is private. Add {profile.username} as a friend to see their
+                    favorites, lists and activity.
+                  </span>
+                </p>
+              )}
             </div>
             {profile.counts && (
               <div className="hidden shrink-0 items-center gap-6 sm:flex" aria-label="Profile statistics">
@@ -575,16 +584,6 @@ export default function UserProfileView({ username }: { username: string }) {
             </div>
           )}
         </article>
-      )}
-
-      {profile && !visible && (
-        <section className="mt-10 rounded-xl border border-line bg-surface-2/60 p-8 text-center">
-          <Lock className="mx-auto size-6 text-ink-3" strokeWidth={1.5} aria-hidden="true" />
-          <h2 className="mt-3 font-serif text-[20px] text-foreground">This account is private</h2>
-          <p className="mx-auto mt-1.5 max-w-sm text-[13px] leading-relaxed text-ink-2">
-            Add {profile.username} as a friend to see their favorites, lists and activity.
-          </p>
-        </section>
       )}
 
       {visible && (

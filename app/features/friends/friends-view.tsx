@@ -258,13 +258,24 @@ function AddFriendCard({
 
       {profile && (
         <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-line-2/70 bg-background px-3.5 py-3">
-          <UserAvatar
-            username={profile.username}
-            avatarId={profile.avatarId}
-            className="size-10 rounded-full bg-accent-soft text-[15px] font-semibold text-accent"
-          />
+          <Link
+            href={profileHref(profile)}
+            aria-label={`${profile.username}'s profile`}
+            className="shrink-0"
+          >
+            <UserAvatar
+              username={profile.username}
+              avatarId={profile.avatarId}
+              className="size-10 rounded-full bg-accent-soft text-[15px] font-semibold text-accent"
+            />
+          </Link>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[14px] font-semibold text-foreground">{profile.username}</p>
+            <Link
+              href={profileHref(profile)}
+              className="block truncate text-[14px] font-semibold text-foreground hover:underline"
+            >
+              {profile.username}
+            </Link>
             <p className="mt-0.5 truncate font-mono text-[10px] tracking-[0.1em] text-ink-3 uppercase">
               {profile.kueId ?? ""}
               {profile.bio ? ` · ${profile.bio}` : ""}

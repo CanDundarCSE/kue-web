@@ -8,35 +8,8 @@ import FriendsCard from "@/app/features/home/friends-card";
 import SectionLabel from "@/app/features/home/section-label";
 import SpotlightCard from "@/app/features/home/spotlight-card";
 import { fetchOverview } from "@/lib/api/stats";
+import { formatDateLabel, getPeriod, getTagline } from "@/lib/home-time";
 import { useCurrentUser } from "@/lib/use-current-user";
-
-function getPeriod(hour: number) {
-  if (hour < 5) return "Late night";
-  if (hour < 12) return "Morning";
-  if (hour < 17) return "Afternoon";
-  if (hour < 22) return "Evening";
-  return "Late night";
-}
-
-function getTagline(period: string) {
-  switch (period) {
-    case "Morning":
-      return "the backlog can wait a little longer";
-    case "Afternoon":
-      return "time to push the needle forward";
-    case "Evening":
-      return "the backlog can wait one more night";
-    default:
-      return "wrap it up, or don't — it's your shelf";
-  }
-}
-
-function formatDateLabel(now: number) {
-  const date = new Date(now);
-  const weekday = date.toLocaleDateString("en-US", { weekday: "long" });
-  const month = date.toLocaleDateString("en-US", { month: "short" });
-  return `${weekday.toUpperCase()} · ${month.toUpperCase()} ${date.getDate()}`;
-}
 
 function NameSkeleton() {
   return (

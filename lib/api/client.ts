@@ -14,9 +14,9 @@ function isExcluded(path: string) {
 let refreshInFlight: Promise<CurrentUser | null> | null = null;
 let redirectStarted = false;
 
-// Public auth pages host the session provider but a missing session is their
-// normal state: a dead /me there must not redirect, or /login would bounce
-// onto itself in a reload loop.
+// A missing session is the normal state of the public auth pages: a dead
+// session there must not redirect, or /login would bounce onto itself in a
+// reload loop.
 const PUBLIC_AUTH_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
 
 function isPublicAuthPage() {
@@ -35,6 +35,13 @@ function startSignInRedirect() {
   window.location.assign("/login");
 }
 
+// Public entry point for callers that detect a dead session themselves (for
+// example the `/api/auth/me` probe in lib/use-current-user). Keeps the
+// once-per-page-load guard and the public-auth-page exemption in one place.
+export function redirectToSignIn() {
+  startSignInRedirect();
+}
+
 async function performRefresh(): Promise<CurrentUser | null> {
   let response: Response;
   try {
@@ -46,11 +53,10 @@ async function performRefresh(): Promise<CurrentUser | null> {
 
   if (!response.ok) {
     if (response.status === 401) {
-      // The refresh token itself is dead (expired or revoked). Wipe local
-      // state, let the BFF revoke + clear the cookies server-side, and bounce
-      // to sign-in.
+      // The refresh token itself is dead (expired or revoked), so the backend
+      // has nothing left to revoke. The refresh route already cleared the
+      // cookies on its way to this 401 — just drop local state and bounce.
       emitSessionSync(null);
-      await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
       startSignInRedirect();
     }
     return null;

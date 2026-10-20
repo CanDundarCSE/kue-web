@@ -135,7 +135,7 @@ export async function fetchPublicProfile(
   return { profile: null, error: lastError ?? "Couldn't load this profile." };
 }
 
-export function fetchUserLists(username: string): Promise<{ items: { id: number; name: string; description?: string | null; isPublic: boolean; itemCount: number; previewCoverImages?: string[] }[] } | null> {
+export function fetchUserLists(username: string): Promise<{ items: { id: number; name: string; description?: string | null; isPublic: boolean; visibility?: string; itemCount: number; previewCoverImages?: string[] }[] } | null> {
   return getJson(`/api/users/${encodeURIComponent(username.trim())}/lists`);
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Heart, Loader2, Lock, UserMinus, UserPlus, X } from "lucide-react";
+import { Check, Globe, Heart, Loader2, Lock, UserMinus, UserPlus, Users, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -46,6 +46,7 @@ type UserList = {
   name: string;
   description?: string | null;
   isPublic: boolean;
+  visibility?: string;
   itemCount: number;
   previewCoverImages?: string[];
 };
@@ -234,6 +235,23 @@ function Stat({ label, value }: { label: string; value: number }) {
   );
 }
 
+function UserListVisibilityBadge({ list }: { list: UserList }) {
+  const visibility =
+    list.visibility === "public" || list.visibility === "friends" || list.visibility === "private"
+      ? list.visibility
+      : list.isPublic === false
+        ? "private"
+        : "public";
+  const Icon = visibility === "friends" ? Users : visibility === "private" ? Lock : Globe;
+
+  return (
+    <span className="flex shrink-0 items-center gap-1 rounded-full border border-line bg-background px-2 py-0.5 text-[8.5px] font-mono tracking-[0.14em] text-ink-3 uppercase">
+      <Icon className="size-3" strokeWidth={2} />
+      {visibility === "friends" ? "Friends" : visibility === "private" ? "Private" : "Public"}
+    </span>
+  );
+}
+
 function UserListCard({ list }: { list: UserList }) {
   return (
     <article className="rounded-xl border border-line bg-surface-2 p-4">
@@ -241,6 +259,7 @@ function UserListCard({ list }: { list: UserList }) {
         <h3 className="min-w-0 truncate text-[15px] leading-tight font-semibold text-foreground">
           {list.name}
         </h3>
+        <UserListVisibilityBadge list={list} />
       </div>
 
       {list.description ? (
@@ -296,7 +315,7 @@ function UserListsCard({ username, lists }: { username: string; lists: UserList[
               No lists yet
             </span>
             <p className="mt-2 max-w-sm text-[13px] leading-relaxed text-ink-2">
-              {username} hasn&rsquo;t shared any public lists.
+              {username} hasn&rsquo;t shared any lists.
             </p>
           </div>
         ) : (

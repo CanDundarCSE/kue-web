@@ -1,5 +1,7 @@
 import { fetchProtected } from "@/lib/api/protected";
 
+const VISIBILITIES = new Set(["public", "friends", "private"]);
+
 // The signed-in user's lists, including private ones. The backend caps
 // pageSize at 50.
 export async function GET() {
@@ -37,7 +39,19 @@ export async function POST(request: Request) {
     payload.description = description;
   }
 
-  payload.isPublic = body?.isPublic === true;
+  const visibility = typeof body?.visibility === "string" ? body.visibility.trim().toLowerCase() : "";
+  if (visibility) {
+    if (!VISIBILITIES.has(visibility)) {
+      return Response.json(
+        { message: "visibility must be one of: public, friends, private." },
+        { status: 400 },
+      );
+    }
+    payload.visibility = visibility;
+  } else {
+    // Legacy clients still send a boolean; everything else defaults to public.
+    payload.visibility = body?.isPublic === false ? "private" : "public";
+  }
 
   return fetchProtected("/me/lists", {
     method: "POST",

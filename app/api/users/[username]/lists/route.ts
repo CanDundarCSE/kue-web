@@ -1,7 +1,8 @@
 import { fetchProtected } from "@/lib/api/protected";
 
-// Public custom lists of another user. 403 when their account is private
-// and you're not mutual friends. Private lists are never included.
+// Lists another user has shared with you: public lists, plus friends-only
+// lists when you're accepted friends. 403 when their account is private and
+// you're not mutual friends. Private lists are never included.
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ username: string }> },

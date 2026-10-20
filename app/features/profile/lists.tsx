@@ -1084,10 +1084,12 @@ export default function Lists({ className }: { className?: string }) {
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {lists?.map((list) => (
-              <ListCard key={list.id} list={list} onOpen={() => setOpenList(list)} />
-            ))}
+          <div className="max-h-[26rem] overflow-y-auto pr-1 pb-1 [scrollbar-gutter:stable] [scrollbar-width:thin]">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {lists?.map((list) => (
+                <ListCard key={list.id} list={list} onOpen={() => setOpenList(list)} />
+              ))}
+            </div>
           </div>
         )}
       </div>

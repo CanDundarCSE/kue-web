@@ -93,12 +93,23 @@ async function fetchLibraryForPicker(): Promise<LoadedLibrary> {
 
 export default function LibraryMediaPicker({
   value,
-  reviewedMediaIds,
+  disabledMediaIds,
+  disabledLabel = "Reviewed",
+  busyMediaId = null,
+  placeholder = "Search your library",
+  emptyHint = "Add titles to your library first, then come back to review them.",
   onChange,
 }: {
   value: PickerMedia | null;
-  /** Media the user already reviewed - shown as disabled rows. */
-  reviewedMediaIds: Set<number>;
+  /** Media that can't be picked right now - shown as disabled rows. */
+  disabledMediaIds: Set<number>;
+  /** Short label shown on disabled rows. */
+  disabledLabel?: string;
+  /** Media currently being acted on - shown with a spinner instead of the label. */
+  busyMediaId?: number | null;
+  placeholder?: string;
+  /** Copy shown when the library itself is empty. */
+  emptyHint?: string;
   onChange: (media: PickerMedia) => void;
 }) {
   const [library, setLibrary] = useState<LoadedLibrary | null>(null);
@@ -153,7 +164,7 @@ export default function LibraryMediaPicker({
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search your library"
+          placeholder={placeholder}
           aria-label="Search your library for a title"
           className={cn(
             "h-10 w-full rounded-lg border border-line-2/70 bg-background pr-9 pl-9 text-[13px] text-foreground",
@@ -211,9 +222,7 @@ export default function LibraryMediaPicker({
               {library.items.length === 0 ? "Library is empty" : "No matches"}
             </span>
             <p className="max-w-xs text-[13px] leading-relaxed text-ink-2">
-              {library.items.length === 0
-                ? "Add titles to your library first, then come back to review them."
-                : "Try a different spelling."}
+              {library.items.length === 0 ? emptyHint : "Try a different spelling."}
             </p>
           </div>
         )}
@@ -227,7 +236,8 @@ export default function LibraryMediaPicker({
             )}
             <ul role="listbox" aria-label="Library titles" className="divide-y divide-line">
               {filtered.map((item) => {
-                const alreadyReviewed = reviewedMediaIds.has(item.mediaId);
+                const disabled = disabledMediaIds.has(item.mediaId);
+                const busy = busyMediaId === item.mediaId;
                 const selected = value?.mediaId === item.mediaId;
 
                 return (
@@ -236,13 +246,13 @@ export default function LibraryMediaPicker({
                       type="button"
                       role="option"
                       aria-selected={selected}
-                      disabled={alreadyReviewed}
+                      disabled={disabled || busy}
                       onClick={() => onChange(item)}
                       className={cn(
                         "flex w-full items-center gap-3 px-3 py-2.5 text-left",
                         "transition-colors duration-150 motion-reduce:transition-none",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/30",
-                        alreadyReviewed
+                        disabled || busy
                           ? "cursor-not-allowed opacity-45"
                           : "hover:bg-surface-3/60",
                       )}
@@ -256,11 +266,13 @@ export default function LibraryMediaPicker({
                       <span className="min-w-0 flex-1 truncate text-[13px] text-foreground">
                         {item.title}
                       </span>
-                      {selected ? (
+                      {busy ? (
+                        <Loader2 className="size-3.5 shrink-0 animate-spin text-ink-3" strokeWidth={2} />
+                      ) : selected ? (
                         <Check className="size-4 shrink-0 text-accent" strokeWidth={2} />
-                      ) : alreadyReviewed ? (
+                      ) : disabled ? (
                         <span className="shrink-0 text-[9px] font-mono tracking-[0.14em] text-ink-3 uppercase">
-                          Reviewed
+                          {disabledLabel}
                         </span>
                       ) : null}
                     </button>

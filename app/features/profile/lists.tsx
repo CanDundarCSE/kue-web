@@ -1,8 +1,8 @@
 "use client";
 
-import { Globe, Loader2, Lock, Pencil, Plus, Search, Trash2, Users, X } from "lucide-react";
+import { Globe, Loader2, Lock, Pencil, Plus, Trash2, Users, X } from "lucide-react";
 import Image from "next/image";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import Button from "@/app/components/button";
 import {
@@ -13,8 +13,10 @@ import {
   DialogTitle,
 } from "@/app/components/ui/dialog";
 import { Skeleton } from "@/app/components/ui/skeleton";
+import LibraryMediaPicker, {
+  type PickerMedia,
+} from "@/app/features/reviews/library-media-picker";
 import { authFetch, readApiError } from "@/lib/api/client";
-import { fetchSearchPage, mediaKey, type SearchMedia } from "@/lib/search";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 
@@ -363,85 +365,29 @@ function AddMediaPicker({
   onAdded: (item: CustomListItem) => void;
   onCancel: () => void;
 }) {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchMedia[] | null>(null);
-  const [searching, setSearching] = useState(false);
-  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [busyMediaId, setBusyMediaId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const trimmed = query.trim();
-    if (trimmed.length < 2) {
-      const reset = setTimeout(() => {
-        setResults(null);
-        setSearching(false);
-      }, 0);
-      return () => clearTimeout(reset);
-    }
+  const alreadyInList = useMemo(() => new Set(items.map((item) => item.mediaId)), [items]);
 
-    let cancelled = false;
-    const handle = setTimeout(() => {
-      setSearching(true);
-      setError(null);
-      void fetchSearchPage(trimmed, "", 1, 8).then((page) => {
-        if (cancelled) return;
-        setResults(page?.items ?? []);
-        setSearching(false);
-      });
-    }, 350);
+  const add = async (media: PickerMedia) => {
+    if (busyMediaId !== null || alreadyInList.has(media.mediaId)) return;
 
-    return () => {
-      cancelled = true;
-      clearTimeout(handle);
-    };
-  }, [query]);
-
-  const alreadyInList = useCallback(
-    (media: SearchMedia) => {
-      if (media.id > 0) return items.some((item) => item.mediaId === media.id);
-      return items.some(
-        (item) =>
-          item.media.title.toLowerCase() === media.title.toLowerCase() &&
-          item.media.mediaType === media.mediaType,
-      );
-    },
-    [items],
-  );
-
-  const add = async (media: SearchMedia) => {
-    const key = mediaKey(media, 0);
-    if (busyKey || alreadyInList(media)) return;
-
-    const payload: Record<string, unknown> = {};
-    if (typeof media.id === "number" && media.id > 0) {
-      payload.mediaId = media.id;
-    } else if (media.externalSource && media.externalId) {
-      payload.mediaType = media.mediaType;
-      payload.externalSource = media.externalSource;
-      payload.externalId = media.externalId;
-    } else {
-      setError("This title can't be added to a list.");
-      return;
-    }
-
-    if (media.title) payload.title = media.title;
-    if (media.coverImage) payload.coverImage = media.coverImage;
-    if (media.year !== null) payload.year = media.year;
-    if (media.score !== null) payload.score = media.score;
-
-    setBusyKey(key);
+    setBusyMediaId(media.mediaId);
     setError(null);
 
     const response = await authFetch(`/api/profile/lists/${listId}/items`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ mediaId: media.mediaId }),
     }).catch(() => null);
 
-    setBusyKey(null);
+    setBusyMediaId(null);
 
     if (!response || !response.ok) {
-      setError(response ? await readApiError(response, "Couldn't add that title.") : "Couldn't reach the server.");
+      setError(
+        response ? await readApiError(response, "Couldn't add that title.") : "Couldn't reach the server.",
+      );
       return;
     }
 
@@ -451,90 +397,30 @@ function AddMediaPicker({
 
   return (
     <div className="rounded-lg border border-line-2/70 bg-background p-3">
-      <div className="flex items-center gap-2">
-        <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-ink-3" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search titles…"
-            autoFocus
-            className={cn(
-              "h-9 w-full rounded-md border border-line-2/70 bg-background pl-8 pr-3 text-[12.5px] text-foreground",
-              "placeholder:text-ink-3",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
-            )}
-          />
-        </div>
+      <div className="mb-2.5 flex items-center justify-between gap-2">
+        <span className="text-[9px] font-mono tracking-[0.16em] text-ink-3 uppercase">
+          From your library
+        </span>
         <button
           type="button"
           onClick={onCancel}
-          aria-label="Close search"
-          className="grid size-9 shrink-0 place-items-center rounded-md text-ink-3 hover:bg-surface-3 hover:text-foreground"
+          aria-label="Close library picker"
+          className="grid size-7 shrink-0 place-items-center rounded-md text-ink-3 hover:bg-surface-3 hover:text-foreground"
         >
           <X className="size-4" strokeWidth={2} />
         </button>
       </div>
 
-      {error && <p className="mt-2 text-[12px] text-[#C4533C] dark:text-[#D9705A]">{error}</p>}
+      {error && <p className="mb-2 text-[12px] text-[#C4533C] dark:text-[#D9705A]">{error}</p>}
 
-      {searching ? (
-        <p className="mt-3 flex items-center gap-1.5 text-[11px] font-mono tracking-[0.08em] text-ink-3 uppercase">
-          <Loader2 className="size-3 animate-spin" /> Searching…
-        </p>
-      ) : query.trim().length < 2 ? (
-        <p className="mt-3 text-[12px] text-ink-3">Type at least two characters to search.</p>
-      ) : results && results.length === 0 ? (
-        <p className="mt-3 text-[12px] text-ink-3">No titles found.</p>
-      ) : results && results.length > 0 ? (
-        <ul className="mt-2 max-h-64 overflow-y-auto">
-          {results.map((media, index) => {
-            const key = mediaKey(media, index);
-            const added = alreadyInList(media);
-            const busy = busyKey === key;
-            return (
-              <li key={key} className="flex items-center gap-2.5 border-b border-line/60 py-2 last:border-b-0">
-                <div className="relative h-12 w-8 shrink-0 overflow-hidden rounded border border-line bg-surface-3">
-                  {media.coverImage ? (
-                    <Image src={media.coverImage} alt="" fill sizes="32px" className="object-cover" />
-                  ) : null}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[12.5px] font-medium text-foreground">{media.title}</p>
-                  <p className="truncate text-[10px] font-mono tracking-[0.08em] text-ink-3 uppercase">
-                    {[media.year !== null ? String(media.year) : null, mediaTypeLabel(media.mediaType)]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => void add(media)}
-                  disabled={added || busy}
-                  className={cn(
-                    "inline-flex shrink-0 items-center gap-1 rounded-md border border-line-2/70 px-2 py-1",
-                    "text-[10px] font-mono tracking-[0.08em] uppercase",
-                    "transition-colors duration-150 motion-reduce:transition-none hover:bg-surface-3",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
-                    "disabled:pointer-events-none disabled:opacity-50",
-                  )}
-                >
-                  {busy ? (
-                    <Loader2 className="size-3 animate-spin" />
-                  ) : added ? (
-                    <span>Added</span>
-                  ) : (
-                    <>
-                      <Plus className="size-3" strokeWidth={2} />
-                      Add
-                    </>
-                  )}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      ) : null}
+      <LibraryMediaPicker
+        value={null}
+        disabledMediaIds={alreadyInList}
+        disabledLabel="In list"
+        busyMediaId={busyMediaId}
+        emptyHint="Add a title to your library first, then add it to this list."
+        onChange={(media) => void add(media)}
+      />
     </div>
   );
 }

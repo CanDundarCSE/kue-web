@@ -250,7 +250,7 @@ export default function ReviewComposer({
             {media === null ? (
               <LibraryMediaPicker
                 value={null}
-                reviewedMediaIds={reviewedMediaIds}
+                disabledMediaIds={reviewedMediaIds}
                 onChange={(next) => {
                   setMedia(next);
                   // Carry the library entry's score across so the user does

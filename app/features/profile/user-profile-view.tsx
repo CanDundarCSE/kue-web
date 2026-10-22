@@ -28,6 +28,7 @@ import {
   type FriendDto,
   type PublicProfileDto,
 } from "@/lib/api/friends";
+import thumbnailImageLoader from "@/lib/thumbnail-image-loader";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 
@@ -276,7 +277,7 @@ function UserListCard({ list }: { list: UserList }) {
                 key={index}
                 className="relative size-8 shrink-0 overflow-hidden rounded-md border border-line"
               >
-                <Image src={cover} alt="" fill sizes="32px" className="object-cover" />
+                <Image src={cover} alt="" fill loader={thumbnailImageLoader} sizes="32px" className="object-cover" />
               </div>
             ))
           ) : (

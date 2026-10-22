@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useState } from "react";
 
+import thumbnailImageLoader from "@/lib/thumbnail-image-loader";
+
 export type MediaType = "movie" | "series" | "game" | "anime" | "manga";
 export type MediaAvatarCardSize = "sm" | "md" | "lg" | "xl" | "fluid";
 
@@ -79,6 +81,7 @@ export default function MediaAvatarCard({
           src={image}
           alt=""
           fill
+          loader={thumbnailImageLoader}
           sizes={CARD_SIZES[size]}
           className="object-cover"
           onError={() => setImageFailed(true)}

@@ -17,6 +17,7 @@ import LibraryMediaPicker, {
   type PickerMedia,
 } from "@/app/features/reviews/library-media-picker";
 import { authFetch, readApiError } from "@/lib/api/client";
+import thumbnailImageLoader from "@/lib/thumbnail-image-loader";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 
@@ -224,7 +225,7 @@ function ListCard({ list, onOpen }: { list: CustomList; onOpen: () => void }) {
                 key={index}
                 className="relative size-8 shrink-0 overflow-hidden rounded-md border border-line"
               >
-                <Image src={cover} alt="" fill sizes="32px" className="object-cover" />
+                <Image src={cover} alt="" fill loader={thumbnailImageLoader} sizes="32px" className="object-cover" />
               </div>
             ))
           ) : (
@@ -771,6 +772,7 @@ function ListDetailDialog({
                           src={item.media.coverImage}
                           alt=""
                           fill
+                          loader={thumbnailImageLoader}
                           sizes="40px"
                           className="object-cover"
                         />

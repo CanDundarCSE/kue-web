@@ -100,7 +100,11 @@ export default function SiteNav() {
               <span className="h-9 w-24 animate-pulse rounded-lg bg-surface-2" />
             </div>
           ) : authState === "authenticated" ? (
-            <ButtonLink href="/home" size="sm" className="!px-4 text-[13px] w-24">
+            <ButtonLink
+              href="/home"
+              size="sm"
+              className="!px-4 text-[13px] whitespace-nowrap"
+            >
               Open app
             </ButtonLink>
           ) : (

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import SectionLabel from "@/app/features/home/section-label";
+import AddonSection from "@/app/features/settings/addon-section";
 import {
   Dialog,
   DialogContent,
@@ -620,6 +621,7 @@ export default function SettingsView() {
         <UsernameSection />
         <EmailSection />
         <PrivacySection />
+        <AddonSection />
         <PasswordSection />
         <DeleteAccountSection />
       </div>

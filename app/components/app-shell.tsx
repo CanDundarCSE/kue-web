@@ -4,8 +4,9 @@ import { useSyncExternalStore, type ReactNode } from "react";
 
 import AppSidebar from "@/app/components/app-sidebar";
 import AppTopBar from "@/app/components/app-topbar";
+import SessionStatusScreen from "@/app/components/session-status-screen";
 import LegalReacceptDialog from "@/app/features/legal/legal-reaccept-dialog";
-import { CurrentUserProvider } from "@/lib/use-current-user";
+import { CurrentUserProvider, useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 
 const SIDEBAR_COOKIE_NAME = "kue_sidebar_collapsed";
@@ -73,6 +74,24 @@ export default function AppShell({
   children: ReactNode;
   defaultCollapsed?: boolean;
 }) {
+  return (
+    <CurrentUserProvider>
+      <AppShellFrame defaultCollapsed={defaultCollapsed}>{children}</AppShellFrame>
+    </CurrentUserProvider>
+  );
+}
+
+// Renders nothing but a status screen until the session is known to be valid.
+// Children are never mounted for a signed-out or unauthenticated visitor, so no
+// protected UI appears and no authenticated API calls are fired.
+function AppShellFrame({
+  children,
+  defaultCollapsed,
+}: {
+  children: ReactNode;
+  defaultCollapsed: boolean;
+}) {
+  const { status } = useCurrentUser();
   const collapsed = useSyncExternalStore(
     subscribe,
     () => {
@@ -84,8 +103,18 @@ export default function AppShell({
     () => defaultCollapsed,
   );
 
+  // "unauthenticated" is a 401: the provider has already started a full
+  // navigation to /login. Keep the loader up instead of rendering the app.
+  if (status === "loading" || status === "unauthenticated") {
+    return <SessionStatusScreen state="loading" />;
+  }
+
+  if (status === "unavailable") {
+    return <SessionStatusScreen state="unavailable" />;
+  }
+
   return (
-    <CurrentUserProvider>
+    <>
       <div className="flex min-h-dvh">
         <aside
           className={cn(
@@ -108,6 +137,6 @@ export default function AppShell({
 
       {/* Re-prompts when the accepted legal version is stale. */}
       <LegalReacceptDialog />
-    </CurrentUserProvider>
+    </>
   );
 }

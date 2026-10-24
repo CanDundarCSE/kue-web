@@ -7,6 +7,7 @@ import { LogIn, LogOut, Settings } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/app/components/ui/popover";
 import UserAvatar from "@/app/components/user-avatar";
 import { type CurrentUser } from "@/lib/current-user";
+import { clearCurrentUserCache } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 
 const rowClasses = [
@@ -43,6 +44,8 @@ export default function UserAccountMenu({
       // Fall through to the redirect regardless: the server clears the cookies
       // best-effort, and the client no longer holds a usable session.
     } finally {
+      // Never let a later mount paint this session from the client cache.
+      clearCurrentUserCache();
       router.push("/login");
       router.refresh();
     }

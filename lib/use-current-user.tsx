@@ -10,52 +10,61 @@ import {
 } from "react";
 
 import { redirectToSignIn } from "@/lib/api/client";
-import { isCurrentUser, type CurrentUser } from "@/lib/current-user";
+import { probeSession, type SessionProbe } from "@/lib/api/session";
+import type { CurrentUser } from "@/lib/current-user";
 import { onSessionSync } from "@/lib/session-sync";
+
+// "unavailable" means the probe could not determine the session (network
+// failure, timeout, 5xx). It is NOT a sign-out: the UI shows a retry screen and
+// the cookies stay untouched.
+export type SessionStatus = "loading" | "authenticated" | "unauthenticated" | "unavailable";
 
 type CurrentUserContextValue = {
   user: CurrentUser | null;
   loading: boolean;
+  status: SessionStatus;
 };
 
 const CurrentUserContext = createContext<CurrentUserContextValue>({
   user: null,
   loading: true,
+  status: "loading",
 });
 
-// Single-flight: while the initial /api/auth/me request is in flight, any
-// concurrent caller (e.g. a double-mounted provider under React StrictMode, or
-// a rapid re-mount) reuses the same promise instead of firing a second
-// request. The promise is cleared on settle, so a later call fetches fresh.
-let inFlight: Promise<CurrentUser | null> | null = null;
+// Last validated user, kept across provider mounts so client-side navigation
+// between sections (each has its own layout) does not flash the auth loader.
+// Only ever read/written in the browser: on the server this module could be
+// shared by concurrent requests, and caching a user there would leak profiles
+// between visitors.
+let cachedUser: CurrentUser | null = null;
 
-// A plain fetch, not authFetch: /api/auth/me rotates the token pair server-side
-// itself when the access cookie is missing or expired, so this probe only ever
-// answers 401 when there is no usable refresh token left. Running it through
-// the 401 interceptor added a redundant /api/auth/refresh round trip (which
-// could only 401 too) plus a no-op logout on every signed-out page load.
-function fetchCurrentUserOnce(): Promise<CurrentUser | null> {
+// Bumped whenever the cache is invalidated (logout, 401). A probe that started
+// before the invalidation must not repopulate the cache when it lands late.
+let cacheEpoch = 0;
+
+function readCachedUser(): CurrentUser | null {
+  return typeof window === "undefined" ? null : cachedUser;
+}
+
+function writeCachedUser(user: CurrentUser | null) {
+  if (typeof window !== "undefined") cachedUser = user;
+}
+
+export function clearCurrentUserCache() {
+  cacheEpoch += 1;
+  writeCachedUser(null);
+}
+
+// Single-flight: while a probe is in flight, concurrent callers (a
+// double-mounted provider under React StrictMode, or two providers overlapping
+// during a route transition) share the same result instead of firing twice.
+let inFlight: Promise<SessionProbe> | null = null;
+
+function fetchSessionOnce(): Promise<SessionProbe> {
   if (!inFlight) {
-    inFlight = fetch("/api/auth/me", { cache: "no-store" })
-      .then(async (response) => {
-        if (response.status === 401) {
-          // The route already cleared the cookies it could not use. Treat it
-          // as a dead session: keep the profile empty and bounce to /login,
-          // unless this is a public auth page (the redirect helper checks).
-          redirectToSignIn();
-          return null;
-        }
-        // Any other non-2xx (502 when the API is unreachable, ...) is
-        // transient: report "no session" for this render but never log out or
-        // redirect over it.
-        if (!response.ok) return null;
-        const data: unknown = await response.json();
-        return isCurrentUser(data) ? data : null;
-      })
-      .catch(() => null)
-      .finally(() => {
-        inFlight = null;
-      });
+    inFlight = probeSession().finally(() => {
+      inFlight = null;
+    });
   }
 
   return inFlight;
@@ -67,18 +76,47 @@ function fetchCurrentUserOnce(): Promise<CurrentUser | null> {
 // original request. If the refresh token itself is dead, the refresh route
 // clears the cookies and the interceptor redirects to /login.
 export function CurrentUserProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<CurrentUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<CurrentUser | null>(() => readCachedUser());
+  const [status, setStatus] = useState<SessionStatus>(() =>
+    readCachedUser() ? "authenticated" : "loading",
+  );
 
-  // Initial load: resolve `loading` exactly once and set the user (or null
-  // when not signed in). This is the only path that may set user to null.
+  // Initial load: resolve the session exactly once. A cached user paints the
+  // shell immediately, but the probe still runs and a 401 wins over the cache.
   useEffect(() => {
     let cancelled = false;
+    const epoch = cacheEpoch;
 
-    fetchCurrentUserOnce().then((data) => {
-      if (cancelled) return;
-      setUser(data);
-      setLoading(false);
+    fetchSessionOnce().then((result) => {
+      if (cancelled || epoch !== cacheEpoch) return;
+
+      if (result.state === "authenticated") {
+        writeCachedUser(result.user);
+        setUser(result.user);
+        setStatus("authenticated");
+        return;
+      }
+
+      if (result.state === "unauthenticated") {
+        // Definitive 401: the route already cleared the cookies it could not
+        // use. Drop the cache so a later mount cannot resurrect the session.
+        clearCurrentUserCache();
+        setUser(null);
+        setStatus("unauthenticated");
+        redirectToSignIn();
+        return;
+      }
+
+      // Transient failure. Never log out over it: keep a session that was
+      // already validated in this page load, otherwise offer a retry.
+      const cached = readCachedUser();
+      if (cached) {
+        setUser(cached);
+        setStatus("authenticated");
+      } else {
+        setUser(null);
+        setStatus("unavailable");
+      }
     });
 
     return () => {
@@ -88,19 +126,28 @@ export function CurrentUserProvider({ children }: { children: ReactNode }) {
 
   // A lazy rotation that succeeds elsewhere (the 401 interceptor) carries the
   // user in its payload: pick it up here without a separate /api/auth/me
-  // round-trip.
+  // round-trip. A null emission means the session is dead.
   useEffect(
     () =>
       onSessionSync((synced) => {
         if (synced) {
+          writeCachedUser(synced);
           setUser(synced);
-          setLoading(false);
+          setStatus("authenticated");
+          return;
         }
+
+        clearCurrentUserCache();
+        setUser(null);
+        setStatus("unauthenticated");
       }),
     [],
   );
 
-  const value = useMemo(() => ({ user, loading }), [user, loading]);
+  const value = useMemo(
+    () => ({ user, loading: status === "loading", status }),
+    [user, status],
+  );
 
   return <CurrentUserContext.Provider value={value}>{children}</CurrentUserContext.Provider>;
 }

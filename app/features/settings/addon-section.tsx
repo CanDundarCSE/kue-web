@@ -4,15 +4,11 @@ import { Check, Copy, Loader2, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import {
-  confirmPlaybackCandidate,
   createAddonCredential,
-  dismissPlaybackCandidate,
   getAddonCredential,
-  getPlaybackCandidates,
   revokeAddonCredential,
   type AddonCredentialCreated,
   type AddonCredentialStatus,
-  type PlaybackCandidate,
 } from "@/lib/api/addon";
 import { cn } from "@/lib/utils";
 
@@ -50,17 +46,9 @@ function formatWhen(value: string | null | undefined) {
   });
 }
 
-function episodeLabel(candidate: PlaybackCandidate) {
-  if (candidate.season === null && candidate.episode === null) return null;
-  const season = candidate.season === null ? "?" : candidate.season;
-  const episode = candidate.episode === null ? "?" : candidate.episode;
-  return `S${season} · E${episode}`;
-}
-
 export default function AddonSection() {
   const [status, setStatus] = useState<AddonCredentialStatus | null>(null);
   const [created, setCreated] = useState<AddonCredentialCreated | null>(null);
-  const [candidates, setCandidates] = useState<PlaybackCandidate[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -70,13 +58,9 @@ export default function AddonSection() {
     let cancelled = false;
 
     void (async () => {
-      const [credentialStatus, pending] = await Promise.all([
-        getAddonCredential(),
-        getPlaybackCandidates(),
-      ]);
+      const credentialStatus = await getAddonCredential();
       if (cancelled) return;
       setStatus(credentialStatus);
-      setCandidates(pending);
     })();
 
     return () => {
@@ -85,12 +69,7 @@ export default function AddonSection() {
   }, []);
 
   const refresh = async () => {
-    const [credentialStatus, pending] = await Promise.all([
-      getAddonCredential(),
-      getPlaybackCandidates(),
-    ]);
-    setStatus(credentialStatus);
-    setCandidates(pending);
+    setStatus(await getAddonCredential());
   };
 
   const generate = async () => {
@@ -141,41 +120,6 @@ export default function AddonSection() {
     }
   };
 
-  const confirm = async (candidate: PlaybackCandidate) => {
-    setBusy(`confirm-${candidate.id}`);
-    setError(null);
-    setNotice(null);
-
-    try {
-      await confirmPlaybackCandidate(candidate.id);
-      setCandidates((current) => current?.filter((item) => item.id !== candidate.id) ?? current);
-      setNotice(
-        candidate.mediaType === "movie"
-          ? "Added to your library as watched."
-          : "Episode progress saved to your library.",
-      );
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not confirm this playback.");
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const dismiss = async (candidate: PlaybackCandidate) => {
-    setBusy(`dismiss-${candidate.id}`);
-    setError(null);
-    setNotice(null);
-
-    try {
-      await dismissPlaybackCandidate(candidate.id);
-      setCandidates((current) => current?.filter((item) => item.id !== candidate.id) ?? current);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not dismiss this candidate.");
-    } finally {
-      setBusy(null);
-    }
-  };
-
   const configured = status?.configured ?? false;
 
   return (
@@ -189,12 +133,10 @@ export default function AddonSection() {
             id="settings-addon"
             className="font-serif text-[17px] leading-tight text-foreground"
           >
-            Nuvio playback bridge
+            Nuvio connection
           </h2>
           <p className="mt-1 max-w-[46ch] text-[12px] leading-relaxed text-ink-3">
-            Nuvio asks this addon for subtitles when a player starts. Kue records
-            that as a playback-start candidate — never as a completed watch. You
-            confirm what to save.
+            Connect Nuvio once and Kue keeps your library in sync as you watch.
           </p>
         </div>
         {configured ? (
@@ -214,6 +156,19 @@ export default function AddonSection() {
           {notice}
         </p>
       ) : null}
+
+      <div className="mt-3 rounded-lg border border-line-2/60 bg-background/40 p-3">
+        <p className="text-[12px] leading-relaxed text-ink-2">
+          {configured
+            ? "Nuvio is connected. Movies and series you open are added to your library automatically. Movie completion is still managed in Kue."
+            : "No addon URL is active. Generate one below and install it in Nuvio to start tracking automatically."}
+        </p>
+        <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">
+          Series and anime progress advances to the episode you open, using
+          absolute episode numbers across seasons. Opening a title never marks it
+          completed.
+        </p>
+      </div>
 
       {created ? (
         <div className="mt-4 rounded-lg border border-line-2/70 bg-background/60 p-3">
@@ -235,7 +190,7 @@ export default function AddonSection() {
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
             Copy this now. Kue stores only a hash and cannot show the URL again.
-            Anyone with this URL can record playback candidates for your account.
+            Anyone with this URL can update your library.
           </p>
         </div>
       ) : null}
@@ -286,117 +241,6 @@ export default function AddonSection() {
             : "No addon URL is active."}
         </p>
       ) : null}
-
-      <div className="mt-5 border-t border-line pt-4">
-        <h3 className="font-mono text-[10px] tracking-[0.14em] text-ink-3 uppercase">
-          Playback candidates
-        </h3>
-        <p className="mt-1 text-[12px] leading-relaxed text-ink-3">
-          These are unconfirmed. A subtitle request only proves that playback was
-          started; it says nothing about how much was watched. Kue stores one
-          progress number per title, so confirmation advances progress for season 1
-          only; later seasons are added without guessing.
-        </p>
-
-        {candidates === null ? (
-          <div className="mt-3 space-y-2" aria-hidden="true">
-            {[0, 1].map((index) => (
-              <div key={index} className="h-16 animate-pulse rounded-lg bg-surface-3" />
-            ))}
-          </div>
-        ) : candidates.length === 0 ? (
-          <p className="mt-3 text-[12px] text-ink-3">
-            Nothing to review. Start a title in Nuvio and it will appear here.
-          </p>
-        ) : (
-          <ul className="mt-3 space-y-2">
-            {candidates.map((candidate) => {
-              const episode = episodeLabel(candidate);
-              const confirming = busy === `confirm-${candidate.id}`;
-              const dismissing = busy === `dismiss-${candidate.id}`;
-
-              return (
-                <li
-                  key={candidate.id}
-                  className="flex flex-col gap-3 rounded-lg border border-line-2/60 bg-background/40 p-3 sm:flex-row sm:items-center"
-                >
-                  {candidate.coverImage ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={candidate.coverImage}
-                      alt=""
-                      className="h-16 w-11 shrink-0 rounded object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="h-16 w-11 shrink-0 rounded bg-surface-3" aria-hidden="true" />
-                  )}
-
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-medium text-foreground">
-                      {candidate.title ?? candidate.externalId}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-ink-3">
-                      {candidate.year ? `${candidate.year} · ` : ""}
-                      {episode ? `${episode} · ` : ""}
-                      {candidate.mediaType === "movie" ? "Movie" : "Series"}
-                      {candidate.requestCount > 1 ? ` · ${candidate.requestCount} requests` : ""}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-ink-3">
-                      Last seen {formatWhen(candidate.lastSeenAt)}
-                      {candidate.isResolved
-                        ? ""
-                        : " · not matched to Kue media yet"}
-                    </p>
-                  </div>
-
-                  <div className="flex shrink-0 items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => confirm(candidate)}
-                      disabled={busy !== null || !candidate.isResolved}
-                      title={
-                        candidate.isResolved
-                          ? "Save to your library"
-                          : "Kue could not match this title to TMDB yet"
-                      }
-                      className={primaryButtonClass}
-                    >
-                      {confirming ? (
-                        <Loader2
-                          className="size-3.5 animate-spin"
-                          strokeWidth={2}
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <Check className="size-3.5" strokeWidth={2} aria-hidden="true" />
-                      )}
-                      Confirm
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => dismiss(candidate)}
-                      disabled={busy !== null}
-                      className={secondaryButtonClass}
-                      aria-label={`Dismiss ${candidate.title ?? candidate.externalId}`}
-                    >
-                      {dismissing ? (
-                        <Loader2
-                          className="size-3.5 animate-spin"
-                          strokeWidth={2}
-                          aria-hidden="true"
-                        />
-                      ) : (
-                        <Trash2 className="size-3.5" strokeWidth={2} aria-hidden="true" />
-                      )}
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
     </section>
   );
 }

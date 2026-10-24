@@ -12,25 +12,6 @@ export type AddonCredentialCreated = {
   createdAt: string;
 };
 
-export type PlaybackCandidate = {
-  id: number;
-  mediaId: number | null;
-  isResolved: boolean;
-  mediaType: string;
-  externalSource: string;
-  externalId: string;
-  title: string | null;
-  coverImage: string | null;
-  year: number | null;
-  totalUnits: number | null;
-  unitName: string | null;
-  season: number | null;
-  episode: number | null;
-  firstSeenAt: string;
-  lastSeenAt: string;
-  requestCount: number;
-};
-
 export async function getAddonCredential(): Promise<AddonCredentialStatus | null> {
   const response = await authFetch("/api/addon/credentials", { cache: "no-store" });
   if (!response.ok) return null;
@@ -63,34 +44,5 @@ export async function revokeAddonCredential(): Promise<void> {
   // 404 means there was nothing active; treat it as success.
   if (!response.ok && response.status !== 404) {
     throw new Error(await readApiError(response, "Could not revoke the addon URL."));
-  }
-}
-
-export async function getPlaybackCandidates(): Promise<PlaybackCandidate[]> {
-  const response = await authFetch("/api/playback-candidates", { cache: "no-store" });
-  if (!response.ok) return [];
-  const data = await response.json().catch(() => null);
-  return Array.isArray(data) ? (data as PlaybackCandidate[]) : [];
-}
-
-export async function confirmPlaybackCandidate(id: number): Promise<void> {
-  const response = await authFetch(`/api/playback-candidates/${id}/confirm`, {
-    method: "POST",
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    throw new Error(await readApiError(response, "Could not confirm this playback."));
-  }
-}
-
-export async function dismissPlaybackCandidate(id: number): Promise<void> {
-  const response = await authFetch(`/api/playback-candidates/${id}`, {
-    method: "DELETE",
-    cache: "no-store",
-  });
-
-  if (!response.ok && response.status !== 404) {
-    throw new Error(await readApiError(response, "Could not dismiss this candidate."));
   }
 }

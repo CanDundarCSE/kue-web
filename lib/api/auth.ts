@@ -151,10 +151,17 @@ export function rotateWithLock(refreshToken: string): Promise<RotationOutcome> {
       }
 
       if (!refreshed.ok) {
+        // Only an explicit 401/403 from the backend proves the refresh token is
+        // dead. A 5xx (API cold start, gateway error) or any other status is a
+        // transient outage: report it as such so callers preserve the cookies
+        // instead of logging the user out over a hiccup.
+        const sessionDead = refreshed.status === 401 || refreshed.status === 403;
         return {
           ok: false,
-          status: 401,
-          message: "Session expired. Please sign in again.",
+          status: sessionDead ? 401 : 502,
+          message: sessionDead
+            ? "Session expired. Please sign in again."
+            : "Cannot reach the Kue API.",
         };
       }
 

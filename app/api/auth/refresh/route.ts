@@ -28,7 +28,11 @@ export async function POST(request: Request) {
   const outcome = await rotateWithLock(refreshToken);
 
   if (!outcome.ok) {
-    clearSession(cookieStore, isSecure);
+    // Only a 401 means the backend established that the session is dead. A 502
+    // is a transient outage: keep the cookies so the session survives it.
+    if (outcome.status === 401) {
+      clearSession(cookieStore, isSecure);
+    }
     return Response.json({ message: outcome.message }, { status: outcome.status, headers: NO_STORE });
   }
 

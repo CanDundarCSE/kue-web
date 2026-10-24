@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import RegisterForm from "@/app/components/forms/register-form";
+import SessionGate from "@/app/components/session-gate";
 
 export const metadata: Metadata = {
   title: "Create an account — Kue",
@@ -68,7 +69,9 @@ export default function RegisterPage() {
         </div>
 
         <div className="border-t border-line sm:border-t-0 sm:border-l bg-surface-2/40 p-8 sm:p-10">
-          <RegisterForm />
+          <SessionGate>
+            <RegisterForm />
+          </SessionGate>
 
           <div className="mt-8 flex items-center justify-between border-t border-line pt-5">
             <span className="text-[9px] font-mono tracking-[0.14em] text-ink-3 uppercase">

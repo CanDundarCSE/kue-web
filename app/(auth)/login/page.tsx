@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import SignInForm from "@/app/components/forms/sign-in-form";
+import SessionGate from "@/app/components/session-gate";
 
 export const metadata: Metadata = {
   title: "Sign in — Kue",
@@ -63,7 +64,9 @@ export default function LoginPage() {
         </div>
 
         <div className="border-t border-line sm:border-t-0 sm:border-l bg-surface-2/40 p-8 sm:p-10">
-          <SignInForm />
+          <SessionGate>
+            <SignInForm />
+          </SessionGate>
 
           <div className="mt-8 flex items-center justify-between border-t border-line pt-5">
             <span className="text-[9px] font-mono tracking-[0.14em] text-ink-3 uppercase">

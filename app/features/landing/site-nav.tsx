@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ButtonLink } from "@/app/components/button";
 import ThemeToggleButton from "@/app/components/theme-toggle-button";
 import LogoMark from "@/app/features/landing/logo-mark";
+import { probeSession } from "@/lib/api/session";
 
 const LINKS = [
   { id: "formats", label: "Formats" },
@@ -12,8 +13,31 @@ const LINKS = [
   { id: "faq", label: "FAQ" },
 ];
 
+type NavAuthState = "checking" | "authenticated" | "unauthenticated";
+
 export default function SiteNav() {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [authState, setAuthState] = useState<NavAuthState>("checking");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let active = true;
+
+    // A validated check, not a cookie sniff: the refresh cookie is scoped to
+    // /api/auth and the access cookie lapses after 15 minutes, so the browser
+    // cannot tell us reliably without asking the server.
+    probeSession({ signal: controller.signal }).then((result) => {
+      if (!active) return;
+      setAuthState(
+        result.state === "authenticated" ? "authenticated" : "unauthenticated",
+      );
+    });
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, []);
 
   useEffect(() => {
     if (!("IntersectionObserver" in window)) {
@@ -68,12 +92,27 @@ export default function SiteNav() {
         </div>
 
         <div className="ml-auto flex items-center gap-2 md:ml-0">
-          <ButtonLink href="/login" variant="secondary" size="sm" className="!px-4 text-[13px] w-24">
-            Log in
-          </ButtonLink>
-          <ButtonLink href="/register" size="sm" className="!px-4 text-[13px] w-24">
-            Register
-          </ButtonLink>
+          {authState === "checking" ? (
+            // Placeholder buttons keep the nav footprint stable while the
+            // session probe is in flight.
+            <div aria-hidden="true" className="flex items-center gap-2">
+              <span className="h-9 w-24 animate-pulse rounded-lg bg-surface-2" />
+              <span className="h-9 w-24 animate-pulse rounded-lg bg-surface-2" />
+            </div>
+          ) : authState === "authenticated" ? (
+            <ButtonLink href="/home" size="sm" className="!px-4 text-[13px] w-24">
+              Open app
+            </ButtonLink>
+          ) : (
+            <>
+              <ButtonLink href="/login" variant="secondary" size="sm" className="!px-4 text-[13px] w-24">
+                Log in
+              </ButtonLink>
+              <ButtonLink href="/register" size="sm" className="!px-4 text-[13px] w-24">
+                Register
+              </ButtonLink>
+            </>
+          )}
           <ThemeToggleButton className="!size-9 !rounded-lg !bg-transparent !text-ink-2 hover:!bg-surface-2 hover:!text-ink" />
         </div>
       </div>

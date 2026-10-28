@@ -4,8 +4,12 @@ export async function GET() {
   return fetchProtected("/me/addon/credentials");
 }
 
-export async function POST() {
-  return fetchProtected("/me/addon/credentials", { method: "POST" });
+export async function POST(request: Request) {
+  const body = await request.text();
+  return fetchProtected("/me/addon/credentials", {
+    method: "POST",
+    body: body || "{}",
+  });
 }
 
 export async function DELETE() {

@@ -1,27 +1,37 @@
 import { authFetch, readApiError } from "@/lib/api/client";
 
-export type AddonCredentialStatus = {
+export type AddonCredential = {
+  id: number;
+  label: string | null;
+  createdAt: string;
+  lastUsedAt: string | null;
+};
+
+export type AddonCredentialList = {
   configured: boolean;
-  createdAt?: string | null;
-  lastUsedAt?: string | null;
+  credentials: AddonCredential[];
 };
 
 export type AddonCredentialCreated = {
   token: string;
   manifestUrl: string;
+  id: number;
+  label: string | null;
   createdAt: string;
 };
 
-export async function getAddonCredential(): Promise<AddonCredentialStatus | null> {
+export async function getAddonCredentials(): Promise<AddonCredentialList | null> {
   const response = await authFetch("/api/addon/credentials", { cache: "no-store" });
   if (!response.ok) return null;
-  return (await response.json().catch(() => null)) as AddonCredentialStatus | null;
+  return (await response.json().catch(() => null)) as AddonCredentialList | null;
 }
 
-export async function createAddonCredential(): Promise<AddonCredentialCreated> {
+export async function createAddonCredential(label?: string): Promise<AddonCredentialCreated> {
   const response = await authFetch("/api/addon/credentials", {
     method: "POST",
     cache: "no-store",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ label: label ?? null }),
   });
 
   if (!response.ok) {
@@ -35,8 +45,13 @@ export async function createAddonCredential(): Promise<AddonCredentialCreated> {
   return data;
 }
 
-export async function revokeAddonCredential(): Promise<void> {
-  const response = await authFetch("/api/addon/credentials", {
+/**
+ * Revokes a single device's URL when an id is given, otherwise every active
+ * URL for the account.
+ */
+export async function revokeAddonCredential(id?: number): Promise<void> {
+  const path = id === undefined ? "/api/addon/credentials" : `/api/addon/credentials/${id}`;
+  const response = await authFetch(path, {
     method: "DELETE",
     cache: "no-store",
   });

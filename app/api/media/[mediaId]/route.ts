@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "@/lib/api/backend";
+import { publicCache } from "@/lib/api/cache";
 import { NO_STORE } from "@/lib/api/auth";
 
 export async function GET(
@@ -20,7 +21,7 @@ export async function GET(
     const data = await response.json().catch(() => null);
     return Response.json(data ?? { message: "Media not found." }, {
       status: response.status,
-      headers: NO_STORE,
+      headers: response.ok ? publicCache(300, 3600) : NO_STORE,
     });
   } catch {
     return Response.json({ message: "Cannot reach backend." }, { status: 502, headers: NO_STORE });

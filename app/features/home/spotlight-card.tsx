@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
 import SectionLabel from "@/app/features/home/section-label";
-import { authFetch } from "@/lib/api/client";
+import { fetchContinueEntries } from "@/lib/api/continue";
 import { addToLibraryFromDiscover, fetchDiscover } from "@/lib/api/discover";
 import { fetchSimilarMedia, type MediaDto } from "@/lib/api/media";
 import type { SearchMedia } from "@/lib/search";
@@ -79,35 +79,23 @@ type Spotlight = {
 async function loadSpotlight(isLoggedIn: boolean): Promise<Spotlight> {
   if (isLoggedIn) {
     try {
-      const response = await authFetch("/api/library/continue", { cache: "no-store" });
-      if (response.ok) {
-        const data: unknown = await response.json().catch(() => null);
-        const entries = (
-          Array.isArray(data)
-            ? data
-            : []
-        ) as {
-          mediaId?: number;
-          mediaType?: string;
-          media?: { title?: string; mediaType?: string };
-        }[];
-        const seed = entries.find(
-          (entry) => typeof entry.mediaId === "number" && entry.mediaId > 0,
-        );
-        if (seed?.mediaId) {
-          const similar = await fetchSimilarMedia({ id: seed.mediaId, pageSize: 6 });
-          const items = similar
-            .filter((m) => m.id !== seed.mediaId)
-            .slice(0, 5)
-            .map(toSearchMedia);
-          if (items.length > 0) {
-            const seedType = seed.media?.mediaType ?? seed.mediaType ?? "movie";
-            return {
-              items,
-              kicker: "For you",
-              title: `Because you ${consumeVerb(seedType)} ${seed.media?.title ?? "this"}.`,
-            };
-          }
+      const entries = await fetchContinueEntries();
+      const seed = entries.find(
+        (entry) => typeof entry.mediaId === "number" && entry.mediaId > 0,
+      );
+      if (seed?.mediaId) {
+        const similar = await fetchSimilarMedia({ id: seed.mediaId, pageSize: 6 });
+        const items = similar
+          .filter((m) => m.id !== seed.mediaId)
+          .slice(0, 5)
+          .map(toSearchMedia);
+        if (items.length > 0) {
+          const seedType = seed.media?.mediaType ?? seed.mediaType ?? "movie";
+          return {
+            items,
+            kicker: "For you",
+            title: `Because you ${consumeVerb(seedType)} ${seed.media?.title ?? "this"}.`,
+          };
         }
       }
     } catch {

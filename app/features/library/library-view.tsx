@@ -9,6 +9,8 @@ import { type MediaType } from "@/app/components/media-avatar-card";
 import LibraryEntrySheet, { type EditableLibraryItem } from "@/app/features/library/library-entry-sheet";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { authFetch } from "@/lib/api/client";
+import { invalidateContinueCache } from "@/lib/api/continue";
+import { invalidateLibraryPresence } from "@/lib/library-presence";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 import type { LibraryEntryDto, PagedResponseDto } from "@/lib/api/library";
@@ -458,7 +460,7 @@ export default function LibraryView() {
     );
 
     try {
-      await authFetch(`/api/library/${updated.mediaId}`, {
+      const response = await authFetch(`/api/library/${updated.mediaId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -469,6 +471,7 @@ export default function LibraryView() {
           platform: updated.platform ?? "",
         }),
       });
+      if (response.ok) invalidateContinueCache();
       void refreshStats();
     } catch {
       // Ignore background sync errors
@@ -481,9 +484,13 @@ export default function LibraryView() {
     setTotalItems((prev) => Math.max(0, prev - 1));
 
     try {
-      await authFetch(`/api/library/${mediaId}`, {
+      const response = await authFetch(`/api/library/${mediaId}`, {
         method: "DELETE",
       });
+      if (response.ok) {
+        invalidateContinueCache();
+        invalidateLibraryPresence();
+      }
       void refreshStats();
     } catch {
       // Ignore background sync errors

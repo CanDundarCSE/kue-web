@@ -7,30 +7,15 @@ import { useCallback, useEffect, useState } from "react";
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
 import { Skeleton } from "@/app/components/ui/skeleton";
 import { authFetch } from "@/lib/api/client";
+import {
+  fetchContinueEntries,
+  invalidateContinueCache,
+  type ContinueEntry,
+} from "@/lib/api/continue";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 
 const MEDIA_TYPES = new Set<MediaType>(["movie", "series", "game", "anime", "manga"]);
-
-type EntryMedia = {
-  id: number;
-  title: string;
-  mediaType: string;
-  coverImage?: string | null;
-  year?: number | null;
-  totalUnits?: number | null;
-  unitName?: string | null;
-};
-
-type ContinueEntry = {
-  mediaId: number;
-  mediaType: string;
-  status: string;
-  progress?: number | null;
-  totalUnits?: number | null;
-  unitName?: string | null;
-  media: EntryMedia;
-};
 
 type ContinueItem = {
   mediaId: number;
@@ -101,27 +86,8 @@ function mapEntry(entry: ContinueEntry): ContinueItem | null {
 // with use-current-user, serialized in-process on the BFF by refresh token)
 // rewrites the access cookie and the request is replayed once.
 async function fetchContinueItems(): Promise<ContinueItem[]> {
-  const response = await authFetch("/api/library/continue", { cache: "no-store" });
-  if (!response.ok) throw new Error("load failed");
-
-  const data: unknown = await response.json();
-  if (!Array.isArray(data)) throw new Error("load failed");
-  return data.map(mapEntry).filter((item): item is ContinueItem => item !== null);
-}
-
-// Single-flight: while the initial fetch is in flight, a concurrent mount
-// (e.g. React StrictMode's double mount in dev, or a rapid re-mount) reuses
-// the same promise instead of firing a second request. The promise is cleared
-// on settle, so a later visit to the page fetches fresh data.
-let inFlightContinue: Promise<ContinueItem[]> | null = null;
-
-function fetchContinueItemsOnce(): Promise<ContinueItem[]> {
-  if (!inFlightContinue) {
-    inFlightContinue = fetchContinueItems().finally(() => {
-      inFlightContinue = null;
-    });
-  }
-  return inFlightContinue;
+  const entries = await fetchContinueEntries();
+  return entries.map(mapEntry).filter((item): item is ContinueItem => item !== null);
 }
 
 function StepButton({
@@ -205,7 +171,7 @@ export default function ContinueList({ className }: { className?: string }) {
 
   const load = useCallback(async () => {
     try {
-      setItems(await fetchContinueItemsOnce());
+      setItems(await fetchContinueItems());
       setError(false);
     } catch {
       setItems(null);
@@ -225,7 +191,7 @@ export default function ContinueList({ className }: { className?: string }) {
 
     (async () => {
       try {
-        const data = await fetchContinueItemsOnce();
+        const data = await fetchContinueItems();
         if (cancelled) return;
         setItems(data);
         setError(false);
@@ -258,6 +224,7 @@ export default function ContinueList({ className }: { className?: string }) {
 
       const response = await post();
       if (response.ok) {
+        invalidateContinueCache();
         const updated: unknown = await response.json().catch(() => null);
         setItems((prev) =>
           prev

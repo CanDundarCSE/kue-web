@@ -1,4 +1,5 @@
 import { authFetch } from "@/lib/api/client";
+import { invalidateContinueCache } from "@/lib/api/continue";
 import type { LibraryEntryDto } from "@/lib/api/library";
 import { invalidateLibraryPresence } from "@/lib/library-presence";
 
@@ -136,7 +137,9 @@ export async function saveMediaLibraryStatus(
   }).catch(() => null);
 
   if (!response || !response.ok) return null;
-  return (await response.json().catch(() => null)) as LibraryEntryDto | null;
+  const updated = (await response.json().catch(() => null)) as LibraryEntryDto | null;
+  if (updated) invalidateContinueCache();
+  return updated;
 }
 
 export async function setMediaPlatform(
@@ -174,7 +177,9 @@ export async function setMediaProgress(mediaId: number, progress: number): Promi
     body: JSON.stringify({ progress }),
   }).catch(() => null);
 
-  return !!response && response.ok;
+  const ok = !!response && response.ok;
+  if (ok) invalidateContinueCache();
+  return ok;
 }
 
 export async function setMediaRating(mediaId: number, rating: number): Promise<boolean> {
@@ -215,7 +220,10 @@ export async function addMediaToLibrary(payload: {
 
   if (!response || !response.ok) return null;
   const entry = (await response.json().catch(() => null)) as LibraryEntryDto | null;
-  if (entry) invalidateLibraryPresence();
+  if (entry) {
+    invalidateLibraryPresence();
+    invalidateContinueCache();
+  }
   return entry;
 }
 

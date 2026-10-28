@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "@/lib/api/backend";
 import { NO_STORE } from "@/lib/api/auth";
+import { publicCache } from "@/lib/api/cache";
 
 type RawItem = {
   id?: number;
@@ -114,7 +115,12 @@ export async function GET(request: Request) {
       items.length > 0
         ? items.slice(0, 10).map((item, i) => ({ ...item, rank: i + 1 }))
         : await fetchSearchFallback([FALLBACK_TERMS[typeParam]]);
-    return Response.json({ trending, returning: [] }, { headers: NO_STORE });
+    // An empty rail means every upstream catalog call failed. Do not let a
+    // transient outage be published to the CDN as a valid empty catalog.
+    return Response.json(
+      { trending, returning: [] },
+      { headers: trending.length > 0 ? publicCache(60, 300) : NO_STORE },
+    );
   }
 
   const perType = await Promise.all(
@@ -130,6 +136,9 @@ export async function GET(request: Request) {
     trending = await fetchSearchFallback(Object.values(FALLBACK_TERMS));
   }
 
-  return Response.json({ trending, returning: [] }, { headers: NO_STORE });
+  return Response.json(
+    { trending, returning: [] },
+    { headers: trending.length > 0 ? publicCache(60, 300) : NO_STORE },
+  );
 }
 

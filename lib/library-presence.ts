@@ -112,7 +112,7 @@ export function isMediaInLibrary(presence: LibraryPresence, media: PresenceQuery
   return key !== null && presence.externals.has(key);
 }
 
-export function useLibraryPresence() {
+export function useLibraryPresence({ enabled = true }: { enabled?: boolean } = {}) {
   const { user, loading: authLoading } = useCurrentUser();
   const [presence, setPresence] = useState<LibraryPresence>(EMPTY);
   const [loading, setLoading] = useState(false);
@@ -120,7 +120,7 @@ export function useLibraryPresence() {
   // Deferred like the search surfaces: setState calls must not run
   // synchronously in the effect body (react-hooks/set-state-in-effect).
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || !enabled) return;
 
     let cancelled = false;
     const handle = setTimeout(() => {
@@ -157,7 +157,7 @@ export function useLibraryPresence() {
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [user, authLoading]);
+  }, [user, authLoading, enabled]);
 
   const isInLibrary = useCallback(
     (media: PresenceQueryable) => isMediaInLibrary(presence, media),

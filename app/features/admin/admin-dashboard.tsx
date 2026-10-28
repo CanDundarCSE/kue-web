@@ -86,7 +86,11 @@ export default function AdminDashboardView() {
     const initial = window.setTimeout(() => {
       if (!cancelled) void load();
     }, 0);
-    const timer = window.setInterval(() => void load(), 30_000);
+    // Admin metrics are not real-time: poll once a minute and skip ticks while
+    // the tab is backgrounded so an idle admin tab does not burn invocations.
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void load();
+    }, 60_000);
 
     return () => {
       cancelled = true;

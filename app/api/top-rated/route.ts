@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "@/lib/api/backend";
+import { publicCache } from "@/lib/api/cache";
 import { NO_STORE } from "@/lib/api/auth";
 
 type RawItem = {
@@ -79,7 +80,7 @@ export async function GET(request: Request) {
         totalItems: items.length,
         totalPages: 1,
       },
-      { headers: NO_STORE },
+      { headers: publicCache(60, 300) },
     );
   }
 
@@ -99,7 +100,7 @@ export async function GET(request: Request) {
   const payload = await upstream.json().catch(() => null);
   return Response.json(
     payload ?? { message: "Cannot reach the Kue API." },
-    { status: upstream.status, headers: NO_STORE },
+    { status: upstream.status, headers: upstream.ok ? publicCache(60, 300) : NO_STORE },
   );
 }
 

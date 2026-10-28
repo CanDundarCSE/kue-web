@@ -65,7 +65,10 @@ export default function SearchField() {
 
   const trimmed = query.trim();
   const searchable = trimmed.length >= 2;
-  const { isInLibrary } = useLibraryPresence();
+  // Only load "in library" badges once the user is actually searching; the
+  // full library is otherwise paged in on every app load for a dropdown that
+  // may never be opened.
+  const { isInLibrary } = useLibraryPresence({ enabled: searchable });
 
   // "/" focuses the field from anywhere (unless already typing).
   useEffect(() => {

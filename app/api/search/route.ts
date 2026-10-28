@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "@/lib/api/backend";
+import { publicCache } from "@/lib/api/cache";
 import { NO_STORE } from "@/lib/api/auth";
 
 const MEDIA_TYPES = new Set(["movie", "series", "game", "anime", "manga"]);
@@ -49,6 +50,6 @@ export async function GET(request: Request) {
   const payload = await upstream.json().catch(() => null);
   return Response.json(
     payload ?? { message: "Cannot reach the Kue API." },
-    { status: upstream.status, headers: NO_STORE },
+    { status: upstream.status, headers: upstream.ok ? publicCache(30, 120) : NO_STORE },
   );
 }

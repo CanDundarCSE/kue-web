@@ -7,6 +7,7 @@ import { ArrowRight, Search, Star } from "lucide-react";
 import MediaAvatarCard, { type MediaType } from "@/app/components/media-avatar-card";
 import LibraryBadge from "@/app/components/library-badge";
 import { useLibraryPresence } from "@/lib/library-presence";
+import { onSearchFocusRequest } from "@/lib/search-focus";
 import { mediaKey, type SearchMedia } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
@@ -69,6 +70,18 @@ export default function SearchField() {
   // full library is otherwise paged in on every app load for a dropdown that
   // may never be opened.
   const { isInLibrary } = useLibraryPresence({ enabled: searchable });
+
+  // Other parts of the app (e.g. the empty library) can ask the one global
+  // search field to take focus instead of linking to an empty search page.
+  useEffect(
+    () =>
+      onSearchFocusRequest(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+        setOpen(true);
+      }),
+    [],
+  );
 
   // "/" focuses the field from anywhere (unless already typing).
   useEffect(() => {

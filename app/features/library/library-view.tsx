@@ -11,6 +11,7 @@ import { Skeleton } from "@/app/components/ui/skeleton";
 import { authFetch } from "@/lib/api/client";
 import { invalidateContinueCache } from "@/lib/api/continue";
 import { invalidateLibraryPresence } from "@/lib/library-presence";
+import { requestSearchFocus } from "@/lib/search-focus";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 import type { LibraryEntryDto, PagedResponseDto } from "@/lib/api/library";
@@ -687,13 +688,14 @@ export default function LibraryView() {
                 <p className="mt-1 max-w-sm text-xs text-zinc-500 dark:text-zinc-400">
                   Search for films, series, games, anime, or manga to start tracking your progress.
                 </p>
-                <Link
-                  href="/home/search"
+                <button
+                  type="button"
+                  onClick={requestSearchFocus}
                   className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-3.5 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 transition-colors"
                 >
                   <Search className="size-3.5" />
                   <span>Search titles</span>
-                </Link>
+                </button>
               </>
             )}
           </div>

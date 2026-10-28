@@ -9,6 +9,7 @@ import LibraryBadge from "@/app/components/library-badge";
 import SectionLabel from "@/app/features/home/section-label";
 import SearchPaginator from "@/app/features/search/search-paginator";
 import { useLibraryPresence } from "@/lib/library-presence";
+import { requestSearchFocus } from "@/lib/search-focus";
 import { fetchSearchPage, mediaKey, type SearchMedia, type SearchSort } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
@@ -477,9 +478,23 @@ export default function SearchResults({
               Nothing to show yet.
             </h3>
             <p className="mt-2 max-w-sm text-[13px] leading-relaxed text-ink-2">
-              Type a title in the search bar above &mdash; movies, series, games,
-              anime and manga are all in one catalog.
+              Use the search field in the top bar to find movies, series, games,
+              anime and manga &mdash; all in one catalog.
             </p>
+            <button
+              type="button"
+              onClick={requestSearchFocus}
+              className={cn(
+                "mt-5 inline-flex items-center gap-2 rounded-lg border border-line-2/70 bg-surface-3/40 px-4 py-2",
+                "text-[11px] font-mono tracking-[0.08em] text-ink-2 uppercase",
+                "transition-colors duration-150 motion-reduce:transition-none",
+                "hover:bg-surface-3 hover:text-foreground",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+              )}
+            >
+              <Search className="size-3.5" strokeWidth={2} aria-hidden="true" />
+              Search titles
+            </button>
           </div>
         )}
 

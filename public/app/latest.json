@@ -1,0 +1,7 @@
+{
+  "version": "1.0.0",
+  "versionCode": 1,
+  "apkUrl": "https://github.com/CanDundarCSE/kue-mobile/releases/latest/download/kue.apk",
+  "notes": "Initial release.",
+  "minVersionCode": 1
+}

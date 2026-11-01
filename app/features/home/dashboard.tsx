@@ -51,19 +51,19 @@ export default function Dashboard({ now }: { now: number }) {
   }, [user, loading]);
 
   return (
-    <div className="mx-auto w-full max-w-[1160px] px-5 py-8 sm:px-8 sm:py-10">
+    <div className="mx-auto w-full max-w-[1160px] px-4 py-6 sm:px-8 sm:py-10">
       <section aria-labelledby="greeting-heading">
         <SectionLabel>{formatDateLabel(now)}</SectionLabel>
 
         <h1
           id="greeting-heading"
-          className="mt-5 font-serif text-[clamp(30px,4.5vw,46px)] leading-[1.05] tracking-[-0.01em] text-foreground"
+          className="mt-4 font-serif text-[clamp(30px,4.5vw,46px)] leading-[1.05] tracking-[-0.01em] text-foreground sm:mt-5"
         >
           {period}, {name ? name : loading ? <NameSkeleton /> : "there"}
           <span className="text-accent">.</span>
         </h1>
 
-        <p className="mt-3 text-[14px] text-ink-2">
+        <p className="mt-2 text-[13px] text-ink-2 sm:mt-3 sm:text-[14px]">
           {inProgress === null ? (
             <CountSkeleton />
           ) : inProgress > 0 ? (
@@ -76,12 +76,12 @@ export default function Dashboard({ now }: { now: number }) {
         </p>
       </section>
 
-      <section className="mt-10" aria-label="Continue">
+      <section className="mt-7 sm:mt-10" aria-label="Continue">
         <SectionLabel>Continue</SectionLabel>
-        <ContinueList className="mt-5" />
+        <ContinueList className="mt-4 sm:mt-5" />
       </section>
 
-      <div role="separator" aria-hidden="true" className="my-9 h-px w-full bg-line" />
+      <div role="separator" aria-hidden="true" className="my-6 h-px w-full bg-line sm:my-9" />
 
       <section className="grid gap-4 lg:grid-cols-[1.45fr_1fr]">
         <SpotlightCard />

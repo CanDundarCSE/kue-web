@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 
 function FriendsEmptyState() {
   return (
-    <div className="mt-4 flex flex-1 flex-col items-center justify-center px-2 py-8 text-center">
+    <div className="mt-4 flex flex-1 flex-col items-center justify-center px-2 py-6 text-center sm:py-8">
       <span className="text-[9px] font-mono tracking-[0.16em] text-ink-3 uppercase">
         No friends yet
       </span>
@@ -42,7 +42,7 @@ function FriendsQuietState({ friends }: { friends: FriendDto[] }) {
   const only = friends.length === 1 ? friends[0] : null;
 
   return (
-    <div className="mt-4 flex flex-1 flex-col items-center justify-center px-2 py-8 text-center">
+    <div className="mt-4 flex flex-1 flex-col items-center justify-center px-2 py-6 text-center sm:py-8">
       <div className="relative">
         <div className="flex -space-x-2.5">
           {preview.map((friend) => (
@@ -106,7 +106,7 @@ function FriendsQuietState({ friends }: { friends: FriendDto[] }) {
 
 export function FriendsSkeleton() {
   return (
-    <ul aria-hidden="true" className="mt-4 flex flex-1 flex-col">
+    <ul aria-hidden="true" className="mt-4 flex flex-1 flex-col max-sm:[&>li:nth-child(n+4)]:hidden">
       {[0, 1, 2, 3].map((index) => (
         <li key={index} className="flex items-center gap-3 border-b border-line/60 py-3 last:border-b-0">
           <Skeleton className="size-8 shrink-0 rounded-full" />
@@ -161,7 +161,7 @@ export default function FriendsCard() {
 
   if (error) {
     return (
-      <article className="flex flex-col rounded-xl border border-line bg-surface-2 p-5 sm:p-6">
+      <article className="flex min-w-0 flex-col rounded-xl border border-line bg-surface-2 p-5 sm:p-6">
         <SectionLabel>Friends</SectionLabel>
         <div className="mt-4 flex flex-1 flex-col items-center justify-center gap-3 px-2 py-8 text-center">
           <p className="text-[13px] text-ink-2">Couldn&rsquo;t load your friends.</p>
@@ -183,7 +183,7 @@ export default function FriendsCard() {
   }
 
   return (
-    <article className="flex flex-col rounded-xl border border-line bg-surface-2 p-5 sm:p-6">
+    <article className="flex min-w-0 flex-col rounded-xl border border-line bg-surface-2 p-5 sm:p-6">
       <SectionLabel>Friends</SectionLabel>
 
       {friends === null || activity === null ? (
@@ -193,38 +193,53 @@ export default function FriendsCard() {
       ) : activity.length === 0 ? (
         <FriendsQuietState friends={friends} />
       ) : (
-        <ul className="mt-4 flex flex-1 flex-col">
-          {activity.map((item) => (
-            <li
-              key={item.id}
-              className="flex items-center gap-3 border-b border-line/60 py-3 last:border-b-0"
-            >
-              <Link
-                href={profileHref(item)}
-                aria-label={`${item.username}'s profile`}
-                className="shrink-0"
+        <>
+          <ul className="mt-4 flex flex-1 flex-col max-sm:[&>li:nth-child(n+4)]:hidden">
+            {activity.map((item) => (
+              <li
+                key={item.id}
+                className="flex items-center gap-3 border-b border-line/60 py-3 last:border-b-0"
               >
-                <UserAvatar
-                  username={item.username}
-                  avatarId={item.avatarId}
-                  className="size-8 rounded-full bg-surface-3 text-[11px] font-semibold text-ink-2"
-                />
-              </Link>
-              <p className="min-w-0 flex-1 truncate text-[13px] leading-tight text-ink-2">
                 <Link
                   href={profileHref(item)}
-                  className="font-semibold text-foreground hover:underline"
+                  aria-label={`${item.username}'s profile`}
+                  className="shrink-0"
                 >
-                  {item.username}
-                </Link>{" "}
-                {item.formattedText}
-              </p>
-              <span className="shrink-0 font-mono text-[10px] tracking-[0.08em] text-ink-3 uppercase">
-                {item.timeAgo}
-              </span>
-            </li>
-          ))}
-        </ul>
+                  <UserAvatar
+                    username={item.username}
+                    avatarId={item.avatarId}
+                    className="size-8 rounded-full bg-surface-3 text-[11px] font-semibold text-ink-2"
+                  />
+                </Link>
+                <p className="min-w-0 flex-1 truncate text-[13px] leading-tight text-ink-2">
+                  <Link
+                    href={profileHref(item)}
+                    className="font-semibold text-foreground hover:underline"
+                  >
+                    {item.username}
+                  </Link>{" "}
+                  {item.formattedText}
+                </p>
+                <span className="shrink-0 font-mono text-[10px] tracking-[0.08em] text-ink-3 uppercase">
+                  {item.timeAgo}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {activity.length > 3 ? (
+            <Link
+              href="/friends"
+              className={cn(
+                "mt-3 inline-flex items-center gap-1.5 self-start rounded-full border border-line-2/70 px-3.5 py-1.5 text-[11px] font-mono tracking-[0.08em] text-ink-2 uppercase sm:hidden",
+                "transition-colors duration-150 motion-reduce:transition-none",
+                "hover:bg-surface-3 hover:text-foreground",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
+              )}
+            >
+              View all activity
+            </Link>
+          ) : null}
+        </>
       )}
     </article>
   );

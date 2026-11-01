@@ -131,7 +131,7 @@ function AppShellFrame({
 
         <div className="flex min-w-0 flex-1 flex-col">
           <AppTopBar />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1 pb-[env(safe-area-inset-bottom)]">{children}</main>
         </div>
       </div>
 

@@ -138,7 +138,7 @@ function AddButton({ media }: { media: SearchMedia }) {
       disabled={state === "loading" || state === "done"}
       onClick={handleAdd}
       className={cn(
-        "grid size-8 shrink-0 place-items-center rounded-lg border transition-colors duration-150 motion-reduce:transition-none",
+        "grid size-9 shrink-0 place-items-center rounded-lg border transition-colors duration-150 motion-reduce:transition-none sm:size-8",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
         state === "done"
           ? "border-transparent bg-transparent text-accent"
@@ -172,24 +172,25 @@ function SpotlightRow({ media }: { media: SearchMedia }) {
   const router = useRouter();
 
   return (
-    <li className="group flex items-center gap-4 border-b border-line/60 py-3 transition-colors last:border-b-0 hover:bg-surface-2/60">
+    <li className="group relative flex w-[38vw] max-w-[168px] shrink-0 snap-start flex-col gap-2 border-0 py-0 transition-colors sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-4 sm:border-b sm:border-line/60 sm:py-3 sm:last:border-b-0 sm:hover:bg-surface-2/60" style={{ flexBasis: '38vw', maxWidth: '168px' }}>
       <button
         type="button"
         onClick={() => router.push(mediaHref(media))}
-        className="flex min-w-0 flex-1 items-center gap-3.5 text-left focus-visible:outline-none"
+        className="flex min-w-0 flex-1 flex-col gap-2 text-left focus-visible:outline-none sm:flex-row sm:items-center sm:gap-3.5"
       >
         <MediaAvatarCard
           title={media.title}
           year={media.year ?? undefined}
           image={media.coverImage ?? undefined}
           type={asMediaType(media.mediaType)}
-          size="md"
+          size="fluid"
+          className="sm:h-[54px] sm:w-[42px]"
         />
         <div className="min-w-0 flex-1">
           <p className="truncate text-[14px] leading-snug font-semibold text-foreground transition-colors group-hover:text-accent">
             {media.title}
           </p>
-          <p className="mt-1 text-[10px] font-mono tracking-[0.1em] text-ink-3 uppercase">
+          <p className="mt-1 truncate text-[10px] font-mono tracking-[0.1em] text-ink-3 uppercase">
             <span
               className={cn(
                 "mr-1.5 inline-block size-2 rounded-full",
@@ -202,7 +203,9 @@ function SpotlightRow({ media }: { media: SearchMedia }) {
         </div>
       </button>
 
-      <AddButton media={media} />
+      <div className="absolute top-1.5 right-1.5 rounded-lg bg-background/85 p-0.5 shadow-sm backdrop-blur-sm sm:static sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-none">
+        <AddButton media={media} />
+      </div>
     </li>
   );
 }
@@ -226,22 +229,34 @@ function SpotlightEmptyState() {
   );
 }
 
+function SpotlightListSkeleton() {
+  return (
+    <ul
+      aria-hidden="true"
+      className="mt-4 -mx-5 flex flex-1 snap-x gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:thin] sm:mx-0 sm:mt-2 sm:flex-col sm:gap-0 sm:overflow-visible sm:px-0 sm:pb-0"
+    >
+      {[0, 1, 2, 3, 4].map((index) => (
+        <li
+          key={index}
+          className="w-[38vw] max-w-[168px] shrink-0 snap-start space-y-2 sm:flex sm:w-auto sm:max-w-none sm:items-center sm:gap-3.5 sm:space-y-0 sm:border-b sm:border-line/60 sm:py-3 sm:last:border-b-0"
+        >
+          <div className="aspect-[42/54] w-full animate-pulse rounded-lg bg-surface-3 sm:h-[54px] sm:w-[42px]" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="h-3.5 w-2/5 animate-pulse rounded-full bg-surface-3" />
+            <div className="h-2.5 w-1/4 animate-pulse rounded-full bg-surface-3" />
+          </div>
+          <div className="hidden size-8 shrink-0 animate-pulse rounded-lg bg-surface-3 sm:block" />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function SpotlightSkeleton() {
   return (
     <article aria-hidden="true" className="rounded-xl border border-line bg-surface-2 p-5 sm:p-6">
       <SectionLabel>Spotlight</SectionLabel>
-      <ul className="mt-4 flex flex-1 flex-col">
-        {[0, 1, 2, 3, 4].map((index) => (
-          <li key={index} className="flex items-center gap-3.5 border-b border-line/60 py-3 last:border-b-0">
-            <div className="h-[54px] w-[42px] shrink-0 animate-pulse rounded-lg bg-surface-3" />
-            <div className="min-w-0 flex-1 space-y-2">
-              <div className="h-3.5 w-2/5 animate-pulse rounded-full bg-surface-3" />
-              <div className="h-2.5 w-1/4 animate-pulse rounded-full bg-surface-3" />
-            </div>
-            <div className="size-8 shrink-0 animate-pulse rounded-lg bg-surface-3" />
-          </li>
-        ))}
-      </ul>
+      <SpotlightListSkeleton />
     </article>
   );
 }
@@ -291,7 +306,7 @@ export default function SpotlightCard() {
 
   if (error) {
     return (
-      <article className="flex flex-col rounded-xl border border-line bg-surface-2 p-5 sm:p-6">
+      <article className="flex min-w-0 flex-col rounded-xl border border-line bg-surface-2 p-5 sm:p-6">
         <SectionLabel>Spotlight</SectionLabel>
         <div className="mt-4 flex flex-1 flex-col items-center justify-center gap-3 px-2 py-8 text-center">
           <p className="text-[13px] text-ink-2">Couldn&rsquo;t load your picks.</p>
@@ -313,19 +328,22 @@ export default function SpotlightCard() {
   }
 
   return (
-    <article className="flex flex-col rounded-xl border border-line bg-surface-2 p-5 sm:p-6">
+    <article className="flex min-w-0 flex-col rounded-xl border border-line bg-surface-2 p-5 sm:p-6">
       <SectionLabel>Spotlight</SectionLabel>
 
       {spotlight === null ? (
-        <ul aria-hidden="true" className="mt-4 flex flex-1 flex-col">
+        <ul aria-hidden="true" className="mt-3 -mx-5 flex flex-1 snap-x gap-3 overflow-x-auto overscroll-x-contain px-5 pb-1 [scrollbar-width:thin] sm:mx-0 sm:mt-2 sm:snap-none sm:flex-col sm:gap-0 sm:overflow-visible sm:px-0 sm:pb-0">
           {[0, 1, 2, 3, 4].map((index) => (
-            <li key={index} className="flex items-center gap-3.5 border-b border-line/60 py-3 last:border-b-0">
-              <div className="h-[54px] w-[42px] shrink-0 animate-pulse rounded-lg bg-surface-3" />
+            <li
+              key={index}
+              className="w-[38vw] max-w-[168px] shrink-0 snap-start space-y-2 sm:flex sm:w-auto sm:max-w-none sm:items-center sm:gap-3.5 sm:space-y-0 sm:border-b sm:border-line/60 sm:py-3 sm:last:border-b-0"
+            >
+              <div className="aspect-[42/54] w-full animate-pulse rounded-lg bg-surface-3 sm:h-[54px] sm:w-[42px]" />
               <div className="min-w-0 flex-1 space-y-2">
                 <div className="h-3.5 w-2/5 animate-pulse rounded-full bg-surface-3" />
                 <div className="h-2.5 w-1/4 animate-pulse rounded-full bg-surface-3" />
               </div>
-              <div className="size-8 shrink-0 animate-pulse rounded-lg bg-surface-3" />
+              <div className="hidden size-8 shrink-0 animate-pulse rounded-lg bg-surface-3 sm:block" />
             </li>
           ))}
         </ul>
@@ -339,7 +357,7 @@ export default function SpotlightCard() {
           <h3 className="mt-3 font-serif text-xl leading-tight text-foreground">
             {spotlight.title}
           </h3>
-          <ul className="mt-2 flex flex-1 flex-col">
+          <ul className="mt-3 -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-5 pb-1 [scrollbar-width:thin] sm:mx-0 sm:mt-2 sm:snap-none sm:flex-col sm:gap-0 sm:overflow-visible sm:px-0 sm:pb-0">
             {spotlight.items.map((media, index) => (
               <SpotlightRow
                 key={

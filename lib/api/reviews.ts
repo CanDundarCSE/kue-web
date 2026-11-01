@@ -93,6 +93,39 @@ export async function fetchMediaReviews(
   };
 }
 
+export async function fetchUserReviews(
+  username: string,
+  params?: { page?: number; pageSize?: number },
+): Promise<ReviewPage | null> {
+  const query = new URLSearchParams();
+  query.set("page", String(params?.page ?? 1));
+  query.set("pageSize", String(params?.pageSize ?? 10));
+
+  const response = await fetch(
+    `/api/users/${encodeURIComponent(username.trim())}/reviews?${query.toString()}`,
+    { cache: "no-store" },
+  ).catch(() => null);
+
+  if (!response || !response.ok) return null;
+
+  const data = (await response.json().catch(() => null)) as {
+    items?: ReviewDto[];
+    totalItems?: number;
+    totalPages?: number;
+  } | null;
+
+  if (!data || !Array.isArray(data.items)) return null;
+
+  return {
+    items: data.items,
+    totalItems: typeof data.totalItems === "number" ? data.totalItems : data.items.length,
+    totalPages:
+      typeof data.totalPages === "number"
+        ? data.totalPages
+        : Math.max(1, Math.ceil(data.items.length / (params?.pageSize ?? 10))),
+  };
+}
+
 export function buildReviewPayload(input: {
   content: string;
   rating?: number | null;

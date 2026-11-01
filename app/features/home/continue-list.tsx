@@ -110,7 +110,7 @@ function StepButton({
       onClick={onClick}
       disabled={disabled || busy}
       className={cn(
-        "grid size-7 shrink-0 place-items-center rounded-md border border-line-2/70 text-ink-2",
+        "grid size-9 shrink-0 place-items-center rounded-md border border-line-2/70 text-ink-2 sm:size-7",
         "transition-colors duration-150 motion-reduce:transition-none",
         "hover:bg-surface-3 hover:text-foreground",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
@@ -290,14 +290,14 @@ export default function ContinueList({ className }: { className?: string }) {
       <div
         aria-label="Loading continue items"
         className={cn(
-          "flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pt-1 pb-3 [scrollbar-width:thin]",
+          "flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain -mx-4 px-4 pt-1 pb-3 scroll-px-4 [scrollbar-width:thin] sm:mx-0 sm:px-1 sm:scroll-px-0",
           className,
         )}
       >
         {[0, 1, 2, 3].map((index) => (
           <CardSkeleton
             key={index}
-            className="w-[82%] max-w-[340px] shrink-0 snap-start sm:w-[calc(50%-8px)] sm:max-w-none xl:w-[calc(25%-12px)]"
+            className="w-[80%] shrink-0 snap-start sm:w-[calc(50%-8px)] sm:max-w-none xl:w-[calc(25%-12px)]"
           />
         ))}
       </div>
@@ -317,7 +317,7 @@ export default function ContinueList({ className }: { className?: string }) {
       role="region"
       aria-label="Continue items"
       className={cn(
-        "flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pt-1 pb-3 [scrollbar-width:thin]",
+        "flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain -mx-4 px-4 pt-1 pb-3 scroll-px-4 [scrollbar-width:thin] sm:mx-0 sm:px-1 sm:scroll-px-0",
         className,
       )}
     >
@@ -331,7 +331,7 @@ export default function ContinueList({ className }: { className?: string }) {
         return (
           <article
             key={item.mediaId}
-            className="group w-[82%] max-w-[340px] shrink-0 snap-start rounded-xl border border-line bg-surface-2 p-4 transition-colors duration-150 motion-reduce:transition-none hover:border-line-2 sm:w-[calc(50%-8px)] sm:max-w-none xl:w-[calc(25%-12px)]"
+            className="group w-[80%] shrink-0 snap-start rounded-xl border border-line bg-surface-2 p-4 transition-colors duration-150 motion-reduce:transition-none hover:border-line-2 sm:w-[calc(50%-8px)] sm:max-w-none xl:w-[calc(25%-12px)]"
           >
             <div className="flex items-start gap-3">
               <Link
@@ -378,7 +378,7 @@ export default function ContinueList({ className }: { className?: string }) {
                           aria-valuemin={0}
                           aria-valuemax={100}
                           aria-label={`${item.title} — ${item.current} of ${item.total} ${item.unit}`}
-                          className="h-[3px] w-full overflow-hidden rounded-full bg-line"
+                          className="h-1 w-full overflow-hidden rounded-full bg-line sm:h-[3px]"
                         >
                           <div
                             className="h-full rounded-full bg-foreground"
@@ -388,7 +388,7 @@ export default function ContinueList({ className }: { className?: string }) {
                       ) : (
                         <div
                           aria-hidden="true"
-                          className="h-[3px] w-full rounded-full bg-line"
+                          className="h-1 w-full rounded-full bg-line sm:h-[3px]"
                         />
                       )}
 
@@ -402,7 +402,7 @@ export default function ContinueList({ className }: { className?: string }) {
                             : `${item.current} ${item.unit}`}
                         </span>
 
-                        <div className="flex shrink-0 gap-1">
+                        <div className="flex shrink-0 gap-1.5 sm:gap-1">
                           <StepButton
                             label={`Mark ${item.title} behind`}
                             icon={Minus}

@@ -13,6 +13,7 @@ import { ListsSkeleton } from "@/app/features/profile/lists";
 import { ProfileHeaderSkeleton } from "@/app/features/profile/profile-header";
 import { FavoritesSkeleton, CellSkeleton } from "@/app/features/profile/favorites";
 import { RecentActivitySkeleton } from "@/app/features/profile/recent-activity";
+import ProfileReviews from "@/app/features/profile/profile-reviews";
 import {
   fetchFriendRequests,
   fetchFriends,
@@ -647,6 +648,8 @@ export default function UserProfileView({ username }: { username: string }) {
             <UserListsCard username={profile.username} lists={lists} />
             <UserActivityCard days={days} />
           </section>
+
+          <ProfileReviews username={profile.username} />
 
           <section className="mt-10" aria-label="Mutual friends">
             <SectionLabel>Mutual friends</SectionLabel>

@@ -1,8 +1,8 @@
 import { fetchProtected } from "@/lib/api/protected";
 
-const MAX_CHARS = 2_000_000;
+const MAX_CHARS = 5_000_000;
 const MAX_FILES = 50;
-const MAX_TOTAL_CHARS = 5_000_000;
+const MAX_TOTAL_CHARS = 25_000_000;
 
 // Start a background import from an export file's text content,
 // or from multiple Trakt .json texts (never zip archives).
@@ -38,11 +38,11 @@ export async function POST(request: Request) {
         );
       }
       if (content.length > MAX_CHARS) {
-        return Response.json({ message: `'${fileName || "A file"}' is too large (2 MB max per file).` }, { status: 413 });
+        return Response.json({ message: `'${fileName || "A file"}' is too large (5 MB max per file).` }, { status: 413 });
       }
       total += content.length;
       if (total > MAX_TOTAL_CHARS) {
-        return Response.json({ message: "These files are too large in total (5 MB max)." }, { status: 413 });
+        return Response.json({ message: "These files are too large in total (25 MB max)." }, { status: 413 });
       }
       files.push({ fileName, content });
     }
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     return Response.json({ message: "File content is required." }, { status: 400 });
   }
   if (content.length > MAX_CHARS) {
-    return Response.json({ message: "File is too large (2 MB max)." }, { status: 413 });
+    return Response.json({ message: "File is too large (5 MB max)." }, { status: 413 });
   }
 
   const payload: Record<string, unknown> = {

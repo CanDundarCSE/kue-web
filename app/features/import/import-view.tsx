@@ -19,9 +19,9 @@ import {
 import { useCurrentUser } from "@/lib/use-current-user";
 import { cn } from "@/lib/utils";
 
-const MAX_FILE_CHARS = 2_000_000;
+const MAX_FILE_CHARS = 5_000_000;
 const MAX_FILES = 50;
-const MAX_TOTAL_CHARS = 5_000_000;
+const MAX_TOTAL_CHARS = 25_000_000;
 
 const SOURCE_OPTIONS = [
   { value: "", label: "Auto-detect" },
@@ -88,7 +88,7 @@ function UploadCard({ onStarted }: { onStarted: (job: ImportJobDto) => void }) {
         return;
       }
       if (file.size > MAX_FILE_CHARS) {
-        setError(`'${file.name}' is too large (2 MB max per file).`);
+        setError(`'${file.name}' is too large (5 MB max per file).`);
         return;
       }
       const text = await file.text().catch(() => null);
@@ -102,7 +102,7 @@ function UploadCard({ onStarted }: { onStarted: (job: ImportJobDto) => void }) {
       }
       total += text.length;
       if (total > MAX_TOTAL_CHARS) {
-        setError("These files are too large in total (5 MB max).");
+        setError("These files are too large in total (25 MB max).");
         return;
       }
       picked.push({ name: file.name, content: text });
@@ -155,7 +155,7 @@ function UploadCard({ onStarted }: { onStarted: (job: ImportJobDto) => void }) {
       </h2>
       <p className="mt-1.5 text-[13px] leading-relaxed text-ink-2">
         Drop a MyAnimeList, AniList or Trakt export — or a CSV with title, status, score and
-        progress columns. Trakt ships many .json files: unzip the backup and select them all
+        progress columns (Yamtrack exports work as-is: episodes fold into their show). Trakt ships many .json files: unzip the backup and select them all
         at once. Matching runs in the background; you can leave this page.
       </p>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">

@@ -172,7 +172,7 @@ function SpotlightRow({ media }: { media: SearchMedia }) {
   const router = useRouter();
 
   return (
-    <li className="group relative flex w-[38vw] max-w-[168px] shrink-0 snap-start flex-col gap-2 border-0 py-0 transition-colors sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-4 sm:border-b sm:border-line/60 sm:py-3 sm:last:border-b-0 sm:hover:bg-surface-2/60" style={{ flexBasis: '38vw', maxWidth: '168px' }}>
+    <li className="group relative flex w-[38vw] max-w-[168px] shrink-0 snap-start flex-col gap-2 border-0 py-0 transition-colors sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-4 sm:border-b sm:border-line/60 sm:py-3 sm:last:border-b-0 sm:hover:bg-surface-2/60">
       <button
         type="button"
         onClick={() => router.push(mediaHref(media))}

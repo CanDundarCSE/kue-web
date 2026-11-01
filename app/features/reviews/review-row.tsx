@@ -35,14 +35,14 @@ export default function ReviewRow({
       {review.mediaCoverImage ? (
         <Link
           href={`/media/${review.mediaId}`}
-          className="shrink-0 overflow-hidden rounded-lg border border-line"
+          className="relative block h-[62px] w-[46px] shrink-0 overflow-hidden rounded-lg border border-line"
           aria-label={review.mediaTitle}
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- catalog cover from remote provider */}
           <img
             src={review.mediaCoverImage}
             alt=""
-            className="h-[62px] w-[46px] object-cover"
+            className="absolute inset-0 h-full w-full object-cover"
             draggable={false}
           />
         </Link>

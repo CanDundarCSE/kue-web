@@ -87,7 +87,7 @@ async function loadSpotlight(isLoggedIn: boolean): Promise<Spotlight> {
         const similar = await fetchSimilarMedia({ id: seed.mediaId, pageSize: 6 });
         const items = similar
           .filter((m) => m.id !== seed.mediaId)
-          .slice(0, 5)
+          .slice(0, 6)
           .map(toSearchMedia);
         if (items.length > 0) {
           const seedType = seed.media?.mediaType ?? seed.mediaType ?? "movie";
@@ -105,7 +105,7 @@ async function loadSpotlight(isLoggedIn: boolean): Promise<Spotlight> {
 
   const discover = await fetchDiscover();
   return {
-    items: discover.trending.slice(0, 5),
+    items: discover.trending.slice(0, 6),
     kicker: "Trending",
     title: "Trending now.",
   };
@@ -369,10 +369,11 @@ export default function SpotlightCard() {
               />
             ))}
           </ul>
+          <div className="mt-auto pt-4">
           <Link
             href="/discover"
             className={cn(
-              "mt-4 inline-flex items-center gap-1.5 self-start rounded-full border border-line-2/70 px-3.5 py-1.5 text-[11px] font-mono tracking-[0.08em] text-ink-2 uppercase",
+              "inline-flex items-center gap-1.5 self-start rounded-full border border-line-2/70 px-3.5 py-1.5 text-[11px] font-mono tracking-[0.08em] text-ink-2 uppercase",
               "transition-colors duration-150 motion-reduce:transition-none",
               "hover:bg-surface-3 hover:text-foreground",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
@@ -381,6 +382,7 @@ export default function SpotlightCard() {
             More in Discover
             <ArrowRight className="size-3.5" />
           </Link>
+          </div>
         </>
       )}
     </article>

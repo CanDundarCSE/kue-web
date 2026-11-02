@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Button from "@/app/components/button";
 import { readApiError } from "@/lib/api/client";
@@ -20,6 +21,7 @@ const inputClasses = [
 ].join(" ");
 
 export default function ForgotPasswordForm() {
+  const router = useRouter();
   const [form, setForm] = useState<FormState>({
     email: "",
   });
@@ -77,11 +79,7 @@ export default function ForgotPasswordForm() {
         throw new Error(await readApiError(response, "Request failed"));
       }
 
-      setMessage({
-        type: "success",
-        text: "If an account exists, you'll receive a password reset link shortly.",
-      });
-      setForm({ email: "" });
+      router.push(`/reset-password?email=${encodeURIComponent(form.email.trim())}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Something went wrong";
       setMessage({ type: "error", text: msg });
@@ -104,7 +102,7 @@ export default function ForgotPasswordForm() {
           Forgot your password?<span className="text-accent">.</span>
         </h1>
         <p className="mt-3 max-w-[42ch] text-[14px] leading-relaxed text-ink-2">
-          Enter your email and we&apos;ll send you a link to set a new password.
+          Enter your email and we&apos;ll send you a code to set a new password.
         </p>
       </div>
 
@@ -151,7 +149,7 @@ export default function ForgotPasswordForm() {
           disabled={isLoading}
           className="rounded-lg text-sm"
         >
-          {isLoading ? "Sending..." : "Send reset link"}
+          {isLoading ? "Sending..." : "Send reset code"}
         </Button>
       </form>
 

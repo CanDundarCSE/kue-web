@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Button from "@/app/components/button";
+import VerifyEmailForm from "@/app/components/forms/verify-email-form";
 import LegalDialog from "@/app/features/legal/legal-dialog";
 import type { LegalDocumentKey } from "@/app/features/legal/legal-content";
 import {
@@ -68,7 +68,6 @@ const legalLinkClasses = [
 ].join(" ");
 
 export default function RegisterForm() {
-  const router = useRouter();
   const [form, setForm] = useState<FormState>({
     username: "",
     email: "",
@@ -86,6 +85,7 @@ export default function RegisterForm() {
     setLegalOpen(true);
   };
   const [isLoading, setIsLoading] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -161,13 +161,8 @@ export default function RegisterForm() {
         throw new Error(await readApiError(response, "Registration failed"));
       }
 
-      setMessage({
-        type: "success",
-        text: "Account created. Redirecting...",
-      });
-      setForm({ username: "", email: "", password: "" });
-      router.push("/home");
-      router.refresh();
+      setPendingEmail(form.email.trim());
+      setMessage(null);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Something went wrong";
       setMessage({ type: "error", text: msg });
@@ -175,6 +170,10 @@ export default function RegisterForm() {
       setIsLoading(false);
     }
   };
+
+  if (pendingEmail) {
+    return <VerifyEmailForm email={pendingEmail} onBack={() => setPendingEmail(null)} />;
+  }
 
   return (
     <TooltipProvider>

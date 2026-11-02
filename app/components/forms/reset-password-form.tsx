@@ -5,6 +5,8 @@ import Button from "@/app/components/button";
 import { readApiError } from "@/lib/api/client";
 
 type FormState = {
+  email: string;
+  code: string;
   password: string;
   confirmPassword: string;
 };
@@ -31,13 +33,13 @@ function validatePassword(password: string): string | null {
 }
 
 export default function ResetPasswordForm({
-  email,
-  token,
+  initialEmail = "",
 }: {
-  email: string;
-  token: string;
+  initialEmail?: string;
 }) {
   const [form, setForm] = useState<FormState>({
+    email: initialEmail,
+    code: "",
     password: "",
     confirmPassword: "",
   });
@@ -64,6 +66,14 @@ export default function ResetPasswordForm({
 
   const validate = (): FormErrors => {
     const errs: FormErrors = {};
+    if (!form.email.trim()) {
+      errs.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(form.email.trim())) {
+      errs.email = "Enter a valid email";
+    }
+    if (!/^[A-Za-z0-9]{8}$/.test(form.code.replace(/[^A-Za-z0-9]/g, ""))) {
+      errs.code = "Enter the 8-character code from your email";
+    }
     const pwError = validatePassword(form.password);
     if (pwError) errs.password = pwError;
     if (!form.confirmPassword) {
@@ -90,8 +100,8 @@ export default function ResetPasswordForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,
-          token,
+          email: form.email.trim(),
+          token: form.code,
           newPassword: form.password,
         }),
         credentials: "include",
@@ -102,7 +112,7 @@ export default function ResetPasswordForm({
       }
 
       setIsDone(true);
-      setForm({ password: "", confirmPassword: "" });
+      setForm({ email: form.email.trim(), code: "", password: "", confirmPassword: "" });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Something went wrong";
       setMessage({ type: "error", text: msg });
@@ -125,8 +135,8 @@ export default function ResetPasswordForm({
           Choose a new password<span className="text-accent">.</span>
         </h1>
         <p className="mt-3 max-w-[42ch] text-[14px] leading-relaxed text-ink-2">
-          This link works once and expires after an hour. Any active sessions are
-          signed out afterwards.
+          Enter the 8-character code from your email. It works once and expires
+          after 15 minutes. Any active sessions are signed out afterwards.
         </p>
       </div>
 
@@ -165,11 +175,40 @@ export default function ResetPasswordForm({
                 type="email"
                 id="email"
                 name="email"
-                value={email}
-                readOnly
+                value={form.email}
+                onChange={handleChange}
                 autoComplete="email"
-                className={inputClasses + " cursor-not-allowed opacity-60"}
+                className={inputClasses}
+                placeholder="you@somewhere.com"
               />
+              {errors.email && (
+                <p className="mt-1 text-[12px] text-accent">{errors.email}</p>
+              )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="code"
+                className="mb-1.5 block text-[10px] font-mono tracking-[0.14em] text-ink-3 uppercase"
+              >
+                Reset code
+              </label>
+              <input
+                type="text"
+                id="code"
+                name="code"
+                value={form.code}
+                onChange={handleChange}
+                autoComplete="one-time-code"
+                autoCapitalize="characters"
+                spellCheck={false}
+                maxLength={9}
+                className={inputClasses + " font-mono tracking-[0.18em] uppercase"}
+                placeholder="XXXX-XXXX"
+              />
+              {errors.code && (
+                <p className="mt-1 text-[12px] text-accent">{errors.code}</p>
+              )}
             </div>
 
             <div>

@@ -34,8 +34,6 @@ export default async function ResetPasswordPage({
 }) {
   const params = await searchParams;
   const email = first(params.email)?.trim() ?? "";
-  const token = first(params.token)?.trim() ?? "";
-  const isValidLink = Boolean(email && token);
 
   return (
     <main className="flex min-h-dvh items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
@@ -76,37 +74,7 @@ export default async function ResetPasswordPage({
         </div>
 
         <div className="border-t border-line sm:border-t-0 sm:border-l bg-surface-2/40 p-8 sm:p-10">
-          {isValidLink ? (
-            <ResetPasswordForm email={email} token={token} />
-          ) : (
-            <div className="flex flex-col gap-6">
-              <div>
-                <p className="flex items-center gap-3 text-[9.5px] leading-none font-mono tracking-[0.18em] text-ink-3 uppercase">
-                  <span>Account &ndash; Reset Password</span>
-                  <span aria-hidden="true" className="h-px flex-1 bg-line" />
-                </p>
-              </div>
-
-              <div>
-                <h1 className="font-serif text-[clamp(28px,3.5vw,40px)] leading-[1.1] tracking-[-0.01em]">
-                  This link is broken<span className="text-accent">.</span>
-                </h1>
-                <p className="mt-3 max-w-[42ch] text-[14px] leading-relaxed text-ink-2">
-                  The reset link is missing its token or email. Request a new one
-                  and try again.
-                </p>
-              </div>
-
-              <div className="rounded-lg border border-line bg-background px-4 py-3 text-[13px] text-ink-2">
-                <a
-                  href="/forgot-password"
-                  className="text-accent font-medium underline decoration-line-2 underline-offset-2 transition-colors hover:decoration-accent"
-                >
-                  Request a new reset link
-                </a>
-              </div>
-            </div>
-          )}
+          <ResetPasswordForm initialEmail={email} />
 
           <div className="mt-8 flex items-center justify-between border-t border-line pt-5">
             <span className="text-[9px] font-mono tracking-[0.14em] text-ink-3 uppercase">

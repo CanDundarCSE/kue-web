@@ -1,6 +1,6 @@
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes } from "react";
 
-export type ButtonVariant = "primary" | "secondary";
+export type ButtonVariant = "primary" | "secondary" | "accent";
 export type ButtonSize = "sm" | "md" | "lg";
 
 const VARIANT: Record<ButtonVariant, string> = {
@@ -14,6 +14,11 @@ const VARIANT: Record<ButtonVariant, string> = {
     "border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50",
     "dark:border-white/15 dark:bg-zinc-950 dark:text-white dark:hover:bg-zinc-900",
     "focus-visible:ring-zinc-400 dark:focus-visible:ring-zinc-500",
+    "focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950",
+  ].join(" "),
+  accent: [
+    "border border-accent/45 bg-transparent text-accent hover:border-accent hover:bg-accent-soft",
+    "focus-visible:ring-accent",
     "focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950",
   ].join(" "),
 };

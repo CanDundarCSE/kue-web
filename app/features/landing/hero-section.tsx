@@ -1,5 +1,10 @@
+import { Download } from "lucide-react";
+
 import { ButtonLink } from "@/app/components/button";
 import LibraryMock from "@/app/features/landing/library-mock";
+
+const ANDROID_APK_URL =
+  "https://github.com/CanDundarCSE/kue-mobile/releases/latest/download/kue.apk";
 
 export default function HeroSection() {
   return (
@@ -20,6 +25,15 @@ export default function HeroSection() {
         <div className="mt-8 flex flex-wrap gap-3">
           <ButtonLink href="#features" size="lg">
             See how it works
+          </ButtonLink>
+          <ButtonLink
+            href={ANDROID_APK_URL}
+            variant="accent"
+            size="lg"
+            aria-label="Download the Kue Android APK"
+          >
+            <Download className="size-4" aria-hidden="true" />
+            Download APK
           </ButtonLink>
         </div>
       </div>
